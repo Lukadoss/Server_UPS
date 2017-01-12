@@ -63,9 +63,9 @@ public:
 
     void setUsrReady(int playerId);
 
-    void assignUsrToRoom(int roomId, players::User player);
+    void assignUsrToRoom(players::User player);
 
-    void removeUsrFromRoom(int roomId, int socket);
+    bool removeUsrFromRoom(int roomId, int socket);
 
     bool waitForPlayer();
 

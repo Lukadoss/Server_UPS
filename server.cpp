@@ -75,6 +75,7 @@ void server::start() {
 
     consoleOut("Server spuštěn, čeká na příchozí připojení");
     while (true) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
         FD_ZERO(&socketSet);
 
         FD_SET(sockfd, &socketSet); //přidání server socketu do setu (Selector)
@@ -224,13 +225,7 @@ bool server::loginUsr(int socket, std::string name) {
             sendMsg(socket, ("S_LOGGED:" + name + "#" += '\n'));
             consoleOut("Přihlášen nový hráč " + name + " s id " + std::to_string(socket));
 
-            for (int i = 0; i<gameRooms.size(); i++){
-                std::cout<<gameRooms.at(i)->isFull<<std::endl;
-                if(!gameRooms.at(i)->isFull) {
-                    assignUsrToRoom(gameRooms.at(i)->roomId, player);
-                    break;
-                }
-            }
+            assignUsrToRoom(player);
             return true;
         } else {
             sendMsg(socket, "S_NAME_EXISTS:" + name + "#" += '\n');
@@ -286,18 +281,24 @@ void server::sendRoomUserInfo(int socket, int roomId, int user) {
     sendMsg(socket, msg);
 }
 
-void server::assignUsrToRoom(int roomId, players::User player) {
-    int newRoomId = gameRooms.at(roomId)->addPlayer(player);
+void server::assignUsrToRoom(players::User player) {
+    int newRoomId = -1;
+    for (int i = 0; i<gameRooms.size(); i++){
+        if(!gameRooms.at(i)->isFull) {
+            newRoomId = gameRooms.at(i)->addPlayer(player);
+            if(newRoomId!=-1) break;
+        }
+    }
 
     if (newRoomId > -1) {
-        consoleOut("[Místnost " + std::to_string(roomId) + "] Hráč s id " + std::to_string(player.uId) + " vstoupil do místnosti");
-        sendMsg(player.uId, "S_USR_JOINED:" + std::to_string(roomId) + ":" +
-                std::to_string(gameRooms.at(roomId)->numPlaying) + ":" +
-                std::to_string(gameRooms.at(roomId)->maxPlaying) + ":" +
+        consoleOut("[Místnost " + std::to_string(newRoomId) + "] Hráč s id " + std::to_string(player.uId) + " vstoupil do místnosti");
+        sendMsg(player.uId, "S_USR_JOINED:" + std::to_string(newRoomId) + ":" +
+                std::to_string(gameRooms.at(newRoomId)->numPlaying) + ":" +
+                std::to_string(gameRooms.at(newRoomId)->maxPlaying) + ":" +
                 "#" += '\n');
 
     } else {
-        sendMsg(player.uId, "S_JOIN_ERR:" + std::to_string(roomId) + "#" += '\n');
+        sendMsg(player.uId, "S_JOIN_ERR:" + std::to_string(newRoomId) + "#" += '\n');
     }
 }
 
@@ -307,10 +308,12 @@ void server::setUsrReady(int playerId) {
     }
 }
 
-void server::removeUsrFromRoom(int roomId, int socket) {
+bool server::removeUsrFromRoom(int roomId, int socket) {
     if(gameRooms.at(roomId)->removePlayer(socket)){
         consoleOut("[Místnost " + std::to_string(roomId) + "] Hráč s id " + std::to_string(socket) + " byl vyhozen z místnosti");
+        return true;
     };
+    return false;
 }
 
 bool server::nameAvailable(std::string name) {
@@ -331,12 +334,17 @@ void server::sendTimeMsg(gameRoom *r, int id) {
 
 void server::logoutUsr(int socket) {
     players::User player = getUserById(sd);
-    if (player.roomId != -1) removeUsrFromRoom(player.roomId, socket);
-    connectedUsers--;
-    serverFull = false;
-    FD_CLR(socket, &socketSet);
-    close(socket);
-    consoleOut("Hráč s id " + std::to_string(socket) + " se odpojil");
+    if (player.roomId != -1) {
+        if (removeUsrFromRoom(player.roomId, socket)){
+            connectedUsers--;
+            serverFull = false;
+            FD_CLR(socket, &socketSet);
+            close(socket);
+            consoleOut("Hráč s id " + std::to_string(socket) + " se odpojil");
+        }else{
+            consoleOut("Hráč s id " + std::to_string(socket) + " se reconnectnul");
+        }
+    }
 }
 
 bool server::waitForPlayer() {

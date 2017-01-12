@@ -23,8 +23,9 @@ public:
 
     struct gameInfo {
         int onTurnId;
-        bool isOver;
         int lastTurnId;
+        int winner;
+        bool isOver;
         std::vector<std::string> cards;
     };
 
@@ -39,7 +40,6 @@ public:
     enum RoomStatus {
         ROOM_WAIT,
         GAME_IN_PROGRESS,
-        CARD_CHECK,
         GAME_END
     } roomStatus;
 
@@ -47,13 +47,13 @@ public:
 
     bool removePlayer(int uId);
 
-    bool isRoomFull();
+    bool isRoomWaiting();
 
     bool playerInOtherRoom(players::User player);
 
     bool playerAlreadyJoined(int uId);
 
-    bool setPlayerReady(int playerId, bool ready);
+    void setPlayerReady(int playerId, bool ready);
 
     void allPlayersReady();
 
@@ -79,6 +79,12 @@ private:
     void giveCardsToPlayers();
 
     void nextPlayer();
+
+    void checkOnlinePlayers();
+
+    int getDcPlayer();
+
+    std::string getPlayerCards(int i);
 };
 
 #endif //UPS_SERVER_GAMEROOM_H
