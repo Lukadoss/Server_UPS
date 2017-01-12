@@ -1,5 +1,5 @@
 //
-// Created by seda on 27/10/16.
+// Created by Lukado on 27/10/16.
 //
 
 #include "gameRoom.h"

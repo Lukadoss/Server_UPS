@@ -1,5 +1,5 @@
 //
-// Created by seda on 22/12/16.
+// Created by Lukado on 22/12/16.
 //
 
 #include "timer.h"

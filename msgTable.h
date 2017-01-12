@@ -1,5 +1,5 @@
 //
-// Created by seda on 22/10/16.
+// Created by Lukado on 22/10/16.
 //
 
 #ifndef UPS_SERVER_MSGTABLE_H

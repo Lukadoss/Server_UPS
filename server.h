@@ -1,5 +1,5 @@
 //
-// Created by Seda on 20. 10. 2016.
+// Created by Lukado on 20. 10. 2016.
 //
 #ifndef UPS_SERVER_SERVER_H
 #define UPS_SERVER_SERVER_H

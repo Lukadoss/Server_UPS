@@ -1,5 +1,5 @@
 //
-// Created by seda on 27/10/16.
+// Created by Lukado on 27/10/16.
 //
 
 #ifndef UPS_SERVER_GAMEROOM_H

@@ -1,5 +1,5 @@
 //
-// Created by seda on 28/10/16.
+// Created by Lukado on 28/10/16.
 //
 
 #ifndef UPS_SERVER_PLAYERS_H
