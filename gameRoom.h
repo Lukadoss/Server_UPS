@@ -40,7 +40,8 @@ public:
     enum RoomStatus {
         ROOM_WAIT,
         GAME_IN_PROGRESS,
-        GAME_END
+        GAME_END,
+        GAME_WAITING
     } roomStatus;
 
     int addPlayer(players::User player);
@@ -55,6 +56,8 @@ public:
 
     void setPlayerReady(int playerId, bool ready);
 
+    void setPlayerDc(int playerId);
+
     void allPlayersReady();
 
     void createNewGame();
@@ -68,6 +71,8 @@ public:
     void givePackToLast(int pos);
 
     void takePack(int pos);
+
+    void reconnect(int socket, int pos);
 
 private:
     std::thread gameThread;

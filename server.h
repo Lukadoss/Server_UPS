@@ -41,8 +41,6 @@ public:
 
     static void consoleOut(std::string msg);
 
-    void sendMsg(int socket, std::string msg);
-
     std::string receiveMsg(int socket);
 
     bool loginUsr(int socket, std::string name);
@@ -55,8 +53,6 @@ public:
 
     void sendRoomInfo(int socket, int roomId);
 
-    void sendTimeMsg(gameRoom *r, int id);
-
     void sendRoomUsers(int socket, int roomId);
 
     void sendRoomUserInfo(int socket, int roomId, int user);
@@ -65,15 +61,13 @@ public:
 
     void assignUsrToRoom(players::User player);
 
-    bool removeUsrFromRoom(int roomId, int socket);
-
-    bool waitForPlayer();
-
     void isOnTurn(int sd, std::string card);
 
     void checkCheat(int sd);
 
     players::User getUserById(int id);
+
+    bool userIsDced(std::string name);
 };
 
 #endif //UPS_SERVER_SERVER_H

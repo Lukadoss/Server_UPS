@@ -12,16 +12,11 @@ public:
     enum msgTypes {
         C_LOGIN,
         C_LOGOUT,
-        C_GET_TABLE,
-        C_JOIN_ROOM, //User joins room
-        C_LEAVE_ROOM, //User leaves room
-        C_ROW_UPDATE, //Updates one row in table
-        C_ROOM_INFO, //Info about room
-        C_ROOM_USERS, //Info about users in room
+        C_JOIN_ROOM,
         C_USR_READY,
-        C_USR_NREADY,
         C_PUT_CARD,
         C_CHECK_CHEAT,
+        C_ROOM_INFO,
         EOS,
         ERR,
         NO_CODE
