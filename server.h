@@ -68,6 +68,12 @@ public:
     void removeUsrFromRoom(int roomId, int socket);
 
     bool waitForPlayer();
+
+    void isOnTurn(int sd, std::string card);
+
+    void checkCheat(int sd);
+
+    players::User getUserById(int id);
 };
 
 #endif //UPS_SERVER_SERVER_H

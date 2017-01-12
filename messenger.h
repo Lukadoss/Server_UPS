@@ -7,7 +7,7 @@
 
 #include <string>
 #include <sys/socket.h>
-#include "gameRoom.h"
+#include "players.h"
 
 class messenger {
 

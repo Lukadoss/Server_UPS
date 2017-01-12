@@ -8,16 +8,14 @@
 #include <vector>
 #include <string>
 #include <thread>
+#include <algorithm>
+#include <chrono>
 #include "players.h"
 #include "timer.h"
 #include "stl.h"
-#include <algorithm>
-#include <chrono>
 #include "messenger.h"
 
 class server;
-
-class players;
 
 class gameRoom {
 public:
@@ -26,7 +24,7 @@ public:
     struct gameInfo {
         int onTurnId;
         bool isOver;
-        int lastTurnUID;
+        int lastTurnId;
         std::vector<std::string> cards;
     };
 
@@ -41,6 +39,7 @@ public:
     enum RoomStatus {
         ROOM_WAIT,
         GAME_IN_PROGRESS,
+        CARD_CHECK,
         GAME_END
     } roomStatus;
 
@@ -60,31 +59,26 @@ public:
 
     void createNewGame();
 
-    void turnCard(int playerId, int row, int col);
-
-    void addTurned();
-
-    void getRoomWinner(gameRoom *r, server *s);
-
     void clearRoom(gameRoom *r);
 
-    static std::string getString(RoomStatus status);
+    void placeCard(int id, std::string basic_string);
+
+    void checkTopCard(int id);
+
+    void givePackToLast(int pos);
+
+    void takePack(int pos);
 
 private:
     std::thread gameThread;
 
     static void loop(gameRoom *r);
 
-    void shuffleDeck();
-
-    void sendToPlayers(gameRoom *r, server *s, std::string msg);
-
-    bool allTurnedBack(gameRoom *r);
-
     void init();
 
     void giveCardsToPlayers();
 
+    void nextPlayer();
 };
 
 #endif //UPS_SERVER_GAMEROOM_H

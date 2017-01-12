@@ -140,10 +140,10 @@ void server::start() {
                             sendRoomUsers(sd, stoi(splittedMsg[1]));
                             break;
                         case msgtable::C_PUT_CARD:
-                            gameRooms.at(stoi(splittedMsg[1]))->addTurned();
+                            if (splittedMsg[1].length()==1) isOnTurn(sd, splittedMsg[1]);
                             break;
                         case msgtable::C_CHECK_CHEAT:
-                            gameRooms.at(stoi(splittedMsg[1]))->turnCard(sd, stoi(splittedMsg[2]), stoi(splittedMsg[3]));
+                            checkCheat(sd);
                             break;
                         case msgtable::EOS:
                             if(waitForPlayer()) clientSockets[i] = 0;
@@ -188,10 +188,8 @@ std::string server::receiveMsg(int socket) {
     int ret = (int) read(socket, &msg, 127);
     if (ret < 0) {
         consoleOut("Chyba při příjmání zprávy od uživatele " + socket);
-        logoutUsr(socket);
         return "ERR";
     } else if (ret == 0) {
-        logoutUsr(socket);
         return "EOS";
     } else {
         int i = 0;
@@ -215,6 +213,7 @@ bool server::loginUsr(int socket, std::string name) {
             player.name = name;
             player.roomId = -1;
             player.isReady = false;
+            player.isOnline = true;
 
             connectedUsers++;
             if (connectedUsers >= MAX_CONNECTED) {
@@ -262,7 +261,6 @@ void server::sendRoomInfo(int socket, int roomId) {
                               gameRooms.at(roomId)->roomName + ":" +
                               std::to_string(gameRooms.at(roomId)->numPlaying) + ":" +
                               std::to_string(gameRooms.at(roomId)->maxPlaying) + ":" +
-                              gameRoom::getString(gameRooms.at(roomId)->roomStatus) +
                               "#" += '\n';
     sendMsg(socket, msg);
 }
@@ -296,7 +294,6 @@ void server::assignUsrToRoom(int roomId, players::User player) {
         sendMsg(player.uId, "S_USR_JOINED:" + std::to_string(roomId) + ":" +
                 std::to_string(gameRooms.at(roomId)->numPlaying) + ":" +
                 std::to_string(gameRooms.at(roomId)->maxPlaying) + ":" +
-                gameRoom::getString(gameRooms.at(roomId)->roomStatus) +
                 "#" += '\n');
 
     } else {
@@ -333,22 +330,41 @@ void server::sendTimeMsg(gameRoom *r, int id) {
 }
 
 void server::logoutUsr(int socket) {
-    for (int i = 0; i < gameRooms.size(); i++) {
-        for (int j = 0; j < gameRooms.at(i)->users.size(); ++j) {
-            if (gameRooms.at(i)->users.at(j).uId == socket) {
-                removeUsrFromRoom(gameRooms.at(i)->roomId, socket);
-                connectedUsers--;
-                serverFull = false;
-                FD_CLR(socket, &socketSet);
-                close(socket);
-                consoleOut("Hráč s id " + std::to_string(socket) + " se odpojil");
-                break;
-            }
-        }
-    }
+    players::User player = getUserById(sd);
+    if (player.roomId != -1) removeUsrFromRoom(player.roomId, socket);
+    connectedUsers--;
+    serverFull = false;
+    FD_CLR(socket, &socketSet);
+    close(socket);
+    consoleOut("Hráč s id " + std::to_string(socket) + " se odpojil");
 }
 
 bool server::waitForPlayer() {
     logoutUsr(sd);
     return true;
+}
+
+void server::isOnTurn(int sd, std::string card) {
+    players::User player = getUserById(sd);
+    if(player.uId != -1) {
+        gameRooms.at(player.roomId)->placeCard(sd, card);
+    }
+}
+
+void server::checkCheat(int sd) {
+    players::User player = getUserById(sd);
+    if(player.uId != -1) {
+        gameRooms.at(player.roomId)->checkTopCard(sd);
+    }
+}
+
+players::User server::getUserById(int id) {
+    for (int i = 0; i < gameRooms.size(); i++) {
+        for (int j = 0; j < gameRooms.at(i)->users.size(); ++j) {
+            if (gameRooms.at(i)->users.at(j).uId == id) return gameRooms.at(i)->users.at(j);
+        }
+    }
+    players::User user;
+    user.uId = -1;
+    return user;
 }

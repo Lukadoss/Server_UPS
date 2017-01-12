@@ -14,6 +14,7 @@ int gameRoom::addPlayer(players::User player) {
     if (!playerInOtherRoom(player)) {
         if (!isRoomFull()) {
             if (!playerAlreadyJoined(player.uId)) {
+                player.roomId = roomId;
                 users.push_back(player);
 
                 numPlaying++;
@@ -127,7 +128,16 @@ void gameRoom::loop(gameRoom *r) {
     r->giveCardsToPlayers();
     gameElapsed.start();
     while (!r->info.isOver) {
+        int packSize = r->info.cards.size();
 
+        while(packSize==r->info.cards.size()){
+//            checkOnlinePlayers();
+//            checkCheat();
+        }
+        r->nextPlayer();
+        std::string msg = "S_ON_TURN:" + std::to_string(r->info.onTurnId) +
+                          "#" += '\n';
+        messenger::sendMsg(r->users.at(r->info.onTurnId).uId, msg);
     }
 
     r->clearRoom(r);
@@ -155,7 +165,53 @@ void gameRoom::giveCardsToPlayers() {
     }
 }
 
+void gameRoom::placeCard(int id, std::string card) {
+    for (int i = 0; i < users.size(); ++i) {
+        if(users.at(i).uId == id && info.onTurnId == i){
+            for (int j = 0; j < users.at(i).cards.size(); ++j) {
+                if(users.at(i).cards.at(j) == card) {
+                    info.cards.push_back(users.at(i).cards.at(j));
+                    users.at(i).cards.erase(users.at(i).cards.begin()+j);
+                    info.lastTurnId = i;
+                    break;
+                }
+            }
+            break;
+        }
+    }
+}
 
-std::string gameRoom::getString(gameRoom::RoomStatus status) {
-    return std::string();
+void gameRoom::checkTopCard(int id){
+    if (info.cards.size()<1) return;
+    roomStatus = CARD_CHECK;
+    for (int i = 0; i < users.size(); ++i) {
+        if (users.at(i).uId == id) {
+            if(info.cards.front() == info.cards.back()) takePack(i);
+            else givePackToLast(i);
+            break;
+        }
+    }
+}
+
+void gameRoom::givePackToLast(int pos){
+    for (int i = 0; i < info.cards.size(); ++i) {
+        users.at(info.lastTurnId).cards.push_back(info.cards.back());
+        info.cards.pop_back();
+    }
+    info.onTurnId = pos;
+    roomStatus = GAME_IN_PROGRESS;
+}
+
+void gameRoom::takePack(int pos) {
+    for (int i = 0; i < info.cards.size(); ++i) {
+        users.at(pos).cards.push_back(info.cards.back());
+        info.cards.pop_back();
+    }
+    info.onTurnId = info.lastTurnId;
+    roomStatus = GAME_IN_PROGRESS;
+}
+
+void gameRoom::nextPlayer() {
+    if (users.size()-1 != info.onTurnId) info.onTurnId++;
+    else info.onTurnId = 0;
 }
