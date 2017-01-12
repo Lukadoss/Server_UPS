@@ -9,11 +9,10 @@ void messenger::sendMsg(int socket, std::string msg) {
     send(socket, (void *) msgChar, msg.length(), 0);
 }
 
-void messenger::sendMsgAll(std::vector<players::User> players) {
+void messenger::sendMsgAll(std::vector<players::User> players, std::string msg) {
     for (int i = 0; i < players.size(); i++) {
         if (players.at(i).uId != 0) {
-            sendMsg(players.at(i).uId,
-                    "S_USR_READY:" + std::to_string(i) + "#" += '\n');
+            sendMsg(players.at(i).uId, msg);
         }
     }
 }

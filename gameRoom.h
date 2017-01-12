@@ -40,8 +40,8 @@ public:
 
     enum RoomStatus {
         ROOM_WAIT,
-        ROOM_IN_PROGRESS,
-        ROOM_END_GAME
+        GAME_IN_PROGRESS,
+        GAME_END
     } roomStatus;
 
     int addPlayer(players::User player);

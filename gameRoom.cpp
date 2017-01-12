@@ -2,6 +2,7 @@
 // Created by Lukado on 27/10/16.
 //
 
+#include <iostream>
 #include "gameRoom.h"
 
 gameRoom::gameRoom() {
@@ -57,9 +58,10 @@ bool gameRoom::setPlayerReady(int playerId, bool ready) {
         for (int i = 0; i < numPlaying; i++) {
             if (users.at(i).uId == playerId) {
                 users.at(i).isReady = ready;
+                messenger::sendMsgAll(users, "S_USR_READY:" + std::to_string(i) + "#" += '\n');
+                break;
             }
         }
-        messenger::sendMsgAll(users);
         allPlayersReady();
     }
     return false;
@@ -73,7 +75,7 @@ void gameRoom::allPlayersReady() {
         }
         if (numReady == numPlaying) {
             createNewGame();
-            roomStatus = RoomStatus::ROOM_IN_PROGRESS;
+            roomStatus = RoomStatus::GAME_IN_PROGRESS;
         }
     }
 }
@@ -116,18 +118,14 @@ void gameRoom::init(){
 }
 
 void gameRoom::loop(gameRoom *r) {
-    unsigned long turnDuration = 30;
-    unsigned long turnTimeNotify = 20;
-    unsigned long visibleDuration = 3;
-    unsigned long turnTimeoutDuration = 10;
-
-    timer playerDisconnect;
+    timer gameElapsed;
 
     std::string msg = "S_ON_TURN:" + std::to_string(r->info.onTurnId) +
                  "#" += '\n';
     messenger::sendMsg(r->users.at(r->info.onTurnId).uId, msg);
 
     r->giveCardsToPlayers();
+    gameElapsed.start();
     while (!r->info.isOver) {
 
     }
@@ -135,10 +133,12 @@ void gameRoom::loop(gameRoom *r) {
     r->clearRoom(r);
 }
 
-//TODO znova projít čištění místnosti, něco je tam špatně
 void gameRoom::clearRoom(gameRoom *r) {
     r->isFull = false;
     r->roomStatus = RoomStatus::ROOM_WAIT;
+    for (int i = 0; i < users.size(); ++i) {
+        users.at(i).isReady = false;
+    }
 }
 
 void gameRoom::giveCardsToPlayers() {
@@ -155,29 +155,6 @@ void gameRoom::giveCardsToPlayers() {
     }
 }
 
-void gameRoom::turnCard(int playerId, int row, int col) {
-
-}
-
-void gameRoom::addTurned() {
-
-}
-
-void gameRoom::getRoomWinner(gameRoom *r, server *s) {
-
-}
-
-void gameRoom::shuffleDeck() {
-
-}
-
-void gameRoom::sendToPlayers(gameRoom *r, server *s, std::string msg) {
-
-}
-
-bool gameRoom::allTurnedBack(gameRoom *r) {
-    return false;
-}
 
 std::string gameRoom::getString(gameRoom::RoomStatus status) {
     return std::string();
