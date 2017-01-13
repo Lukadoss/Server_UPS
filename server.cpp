@@ -129,11 +129,14 @@ void server::start() {
                                 messenger::sendMsg(sd, badNick += +'\n');
                                 break;
                             }
+                        case msgtable::C_ROOM_INFO:
+                            sendRoomInfo(sd);
+                            break;
                         case msgtable::C_USR_READY:
                             setUsrReady(sd);
                             break;
                         case msgtable::C_PUT_CARD:
-                            if (splittedMsg[1].length()==1) isOnTurn(sd, splittedMsg[1]);
+                            if (splittedMsg[1].length() == 1) isOnTurn(sd, splittedMsg[1]);
                             break;
                         case msgtable::C_CHECK_CHEAT:
                             checkCheat(sd);
@@ -194,7 +197,7 @@ std::string server::receiveMsg(int socket) {
 
 bool server::loginUsr(int socket, std::string name) {
     for (int i = 0; i < gameRooms.size(); ++i) {
-        if(gameRooms.at(i)->playerAlreadyJoined(socket)) return true;
+        if (gameRooms.at(i)->playerAlreadyJoined(socket)) return true;
     }
     if (!serverFull) {
         if (nameAvailable(name)) {
@@ -213,12 +216,11 @@ bool server::loginUsr(int socket, std::string name) {
             FD_SET(socket, &socketSet);
             messenger::sendMsg(socket, ("S_LOGGED:" + name + "#" += '\n'));
             assignUsrToRoom(player);
-            consoleOut("Přihlášen nový hráč " + name + " s id " + std::to_string(socket));
             return true;
-        } else if(userIsDced(name)){
-            for (int i = 0; i < gameRooms.size(); ++i){
+        } else if (userIsDced(name)) {
+            for (int i = 0; i < gameRooms.size(); ++i) {
                 for (int j = 0; j < gameRooms.at(i)->users.size(); ++j) {
-                    if(gameRooms.at(i)->users.at(j).name==name){
+                    if (gameRooms.at(i)->users.at(j).name == name) {
                         gameRooms.at(i)->reconnect(socket, j);
                     }
                 }
@@ -237,46 +239,20 @@ bool server::loginUsr(int socket, std::string name) {
     }
 }
 
-void server::sendRoomUsers(int socket, int roomId) {
-    for (int i = 0; i < gameRooms.at(roomId)->numPlaying; i++) {
-        sendRoomUserInfo(socket, roomId, i);
-        std::string incMsg = receiveMsg(socket);
-        std::vector<std::string> splittedMsg = stl::splitMsg(incMsg);
-        if (splittedMsg[0] == "C_USER_UPDATE") continue;
-        else break;
-    }
-}
-
-void server::sendRoomUserInfo(int socket, int roomId, int user) {
-    std::string ready = "0";
-    if (gameRooms.at(roomId)->users.at(user).isReady) {
-        ready = "1";
-    }
-    std::string msg =
-            "S_ROOM_USER_INFO:" + std::to_string(user) + ":" + gameRooms.at(roomId)->users.at(user).name + ":" +
-            ready + "#" += '\n';
-    messenger::sendMsg(socket, msg);
-}
-
 void server::assignUsrToRoom(players::User player) {
     int newRoomId = -1;
-    for (int i = 0; i<gameRooms.size(); i++){
-        if(!gameRooms.at(i)->isFull) {
+    for (int i = 0; i < gameRooms.size(); i++) {
+        if (!gameRooms.at(i)->isFull) {
             newRoomId = gameRooms.at(i)->addPlayer(player);
-            if(newRoomId!=-1) break;
+            if (newRoomId != -1) break;
         }
     }
 
     if (newRoomId > -1) {
-        consoleOut("[Místnost " + std::to_string(newRoomId) + "] Hráč s id " + std::to_string(player.uId) + " vstoupil do místnosti");
-        std::string msg = "S_ROOM_INFO:"+std::to_string(gameRooms.at(newRoomId)->users.size())+":";
-        for (int j = 0; j < gameRooms.at(newRoomId)->users.size(); ++j) {
-            msg += std::to_string(gameRooms.at(newRoomId)->users.at(j).isReady)+":";
-        }
-        messenger::sendMsg(player.uId, msg+"#\n");
-
+        consoleOut("[Místnost " + std::to_string(newRoomId) + "] Hráč s id " + std::to_string(player.uId) +
+                   " vstoupil do místnosti");
     } else {
-        messenger::sendMsg(player.uId, "S_JOIN_ERR:" + std::to_string(newRoomId) + "#" += '\n');
+        messenger::sendMsg(player.uId, "S_JOIN_ERR:" + std::to_string(newRoomId) + "#\n");
     }
 }
 
@@ -308,8 +284,9 @@ void server::logoutUsr(int socket) {
     } else if (player.uId != -1) {
         connectedUsers--;
         gameRooms.at(player.roomId)->setPlayerDc(player.uId);
-        consoleOut("[Místnost " + std::to_string(player.roomId) + "] Čeká se na reconnect hráče s id " + std::to_string(socket) + "\n");
-    } else{
+        consoleOut("[Místnost " + std::to_string(player.roomId) + "] Čeká se na reconnect hráče s id " +
+                   std::to_string(socket) + "\n");
+    } else {
         serverFull = false;
         FD_CLR(socket, &socketSet);
         close(socket);
@@ -319,14 +296,14 @@ void server::logoutUsr(int socket) {
 
 void server::isOnTurn(int sd, std::string card) {
     players::User player = getUserById(sd);
-    if(player.uId != -1) {
+    if (player.uId != -1) {
         gameRooms.at(player.roomId)->placeCard(sd, card);
     }
 }
 
 void server::checkCheat(int sd) {
     players::User player = getUserById(sd);
-    if(player.uId != -1) {
+    if (player.uId != -1) {
         gameRooms.at(player.roomId)->checkTopCard(sd);
     }
 }
@@ -343,12 +320,24 @@ players::User server::getUserById(int id) {
 }
 
 bool server::userIsDced(std::string name) {
-    for (int i = 0; i < gameRooms.size(); ++i){
+    for (int i = 0; i < gameRooms.size(); ++i) {
         for (int j = 0; j < gameRooms.at(i)->users.size(); ++j) {
-            if(gameRooms.at(i)->users.at(j).name==name && !gameRooms.at(i)->users.at(j).isOnline){
+            if (gameRooms.at(i)->users.at(j).name == name && !gameRooms.at(i)->users.at(j).isOnline) {
                 return true;
             }
         }
     }
     return false;
+}
+
+void server::sendRoomInfo(int socket) {
+    players::User player = getUserById(socket);
+    for (int j = 0; j < gameRooms.at(player.roomId)->users.size(); ++j) {
+        if (player.uId != gameRooms.at(player.roomId)->users.at(j).uId) {
+            messenger::sendMsg(player.uId, "S_ROOM_INFO:" + std::to_string(j) + ":" +
+                                           gameRooms.at(player.roomId)->users.at(j).name + ":" +
+                                           std::to_string(gameRooms.at(player.roomId)->users.at(j).isReady) + "#\n");
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+    }
 }

@@ -11,8 +11,6 @@ class msgtable {
 public:
     enum msgTypes {
         C_LOGIN,
-        C_LOGOUT,
-        C_JOIN_ROOM,
         C_USR_READY,
         C_PUT_CARD,
         C_CHECK_CHEAT,

@@ -49,13 +49,7 @@ public:
 
     void logoutUsr(int socket);
 
-    void sendAllRooms(int socket);
-
-    void sendRoomInfo(int socket, int roomId);
-
-    void sendRoomUsers(int socket, int roomId);
-
-    void sendRoomUserInfo(int socket, int roomId, int user);
+    void sendRoomInfo(int socket);
 
     void setUsrReady(int playerId);
 

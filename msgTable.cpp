@@ -6,10 +6,8 @@
 msgtable::msgTypes msgtable::getType(std::string msg) {
     if (!msg.compare("C_LOGIN")) {
         return msgtable::C_LOGIN;
-    } else if (!msg.compare("C_LOGOUT")) {
-        return msgtable::C_LOGOUT;
-    } else if (!msg.compare("C_JOIN_ROOM")) {
-        return msgtable::C_JOIN_ROOM;
+    } else if (!msg.compare("C_ROOM_INFO")) {
+        return msgtable::C_ROOM_INFO;
     } else if (!msg.compare("C_USR_READY")) {
         return msgtable::C_USR_READY;
     } else if (!msg.compare("C_PUT_CARD")) {

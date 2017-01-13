@@ -14,7 +14,9 @@ class messenger {
 public:
     static void sendMsg(int socket, std::string message);
 
-    static void sendMsgAll(std::vector<players::User> vector, std::string msg);
+    static void sendMsgAll(std::vector<players::User> players, std::string msg);
+
+    static void sendMsgAllOthers(int uid, std::vector<players::User> players, std::string msg);
 };
 
 

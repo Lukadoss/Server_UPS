@@ -16,3 +16,11 @@ void messenger::sendMsgAll(std::vector<players::User> players, std::string msg) 
         }
     }
 }
+
+void messenger::sendMsgAllOthers(int uid, std::vector<players::User> players, std::string msg) {
+    for (int i = 0; i < players.size(); i++) {
+        if (players.at(i).uId != 0 && players.at(i).uId != uid) {
+            sendMsg(players.at(i).uId, msg);
+        }
+    }
+}

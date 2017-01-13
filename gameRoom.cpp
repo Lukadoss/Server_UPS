@@ -22,6 +22,9 @@ int gameRoom::addPlayer(players::User player) {
                 if (numPlaying == maxPlaying) {
                     isFull = true;
                 }
+                messenger::sendMsgAllOthers(player.uId, users,
+                                            "S_USR_JOINED:"+std::to_string(users.size()-1)+":" + player.name +"#\n");
+
                 return roomId;
             } else return -1;
         } else return -1;
@@ -32,9 +35,11 @@ bool gameRoom::removePlayer(int uId) {
     for (unsigned int i = 0; i < users.size(); i++) {
         if (users.at(i).uId == uId) {
             info.isOver = true;
+            std::string name = users.at(i).name;
             users.erase(users.begin() + i);
             numPlaying--;
             isFull = false;
+            messenger::sendMsgAll(users, "S_USR_LEAVE:"+name+"#\n");
             return true;
         }
     }
@@ -61,11 +66,12 @@ void gameRoom::setPlayerReady(int playerId, bool ready) {
         for (int i = 0; i < numPlaying; i++) {
             if (users.at(i).uId == playerId) {
                 if (users.at(i).isReady == ready) {
-                    messenger::sendMsg(playerId, "Uživatel již připraven");
+                    messenger::sendMsg(playerId, "S_CONSOLE_INFO:Uživatel již připraven#\n");
                     break;
                 } else {
                     users.at(i).isReady = ready;
-                    messenger::sendMsgAll(users, "S_USR_READY:" + std::to_string(i) + "#" += '\n');
+                    messenger::sendMsgAllOthers(playerId, users, "S_USR_READY:" + users.at(i).name + "#\n");
+                    messenger::sendMsg(playerId, "S_USR_READY_ACK#\n");
                     break;
                 }
             }
@@ -88,6 +94,7 @@ void gameRoom::allPlayersReady() {
         }
         if (numReady == numPlaying) {
             createNewGame();
+            messenger::sendMsgAll(users, "S_ROOM_READY#");
             roomStatus = RoomStatus::GAME_IN_PROGRESS;
         }
     }
@@ -96,7 +103,7 @@ void gameRoom::allPlayersReady() {
 void gameRoom::createNewGame() {
     init();
     info.onTurnId = 0;
-    messenger::sendMsgAll(users, "S_ROOM_INFO:---GAME_STARTED---\n");
+    messenger::sendMsgAll(users, "S_CONSOLE_INFO:---GAME_STARTED---#\n");
     gameThread = std::thread(loop, this);
     gameThread.detach();
 }
@@ -133,31 +140,28 @@ void gameRoom::init() {
 void gameRoom::loop(gameRoom *r) {
     int previousStackNum;
 
-    messenger::sendMsgAll(r->users, "S_ON_TURN:" + std::to_string(r->info.onTurnId) + "#\n");
+    messenger::sendMsgAll(r->users, "S_ON_TURN:" + r->users.at(r->info.onTurnId).name + "#\n");
 
     r->giveCardsToPlayers();
 
     previousStackNum = r->info.cards.size();
     for (int i = 0; i < r->users.size(); ++i) {
-        messenger::sendMsg(r->users.at(i).uId, r->getPlayerCards(i));
+        messenger::sendMsg(r->users.at(i).uId, "S_CARDS_OWNED:"+r->getPlayerCards(i)+"#\n");
     }
 
     while (!r->info.isOver) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
         if (previousStackNum < r->info.cards.size()) {
-            messenger::sendMsg(r->users.at(r->info.onTurnId).uId, r->getPlayerCards(r->info.onTurnId));
+            messenger::sendMsg(r->users.at(r->info.onTurnId).uId, "S_CARDS_OWNED:"+r->getPlayerCards(r->info.onTurnId)+"#\n");
             r->nextPlayer();
-            messenger::sendMsgAll(r->users, "S_ON_TURN:" + std::to_string(r->info.onTurnId) + "#\n");
+            messenger::sendMsgAll(r->users, "S_ON_TURN:" + r->users.at(r->info.onTurnId).name + "#\n");
             previousStackNum = r->info.cards.size();
         }
         if (r->info.cards.size() == 0 && previousStackNum != 0) previousStackNum = 0;
 
         r->checkOnlinePlayers();
-//          checkCheat();
 
     }
-    messenger::sendMsgAll(r->users,
-                          "S_ROOM_INFO:Hráč s id " + std::to_string(r->info.winner) + " je vítěz. Gratulace!" += '\n');
     r->roomStatus = RoomStatus::GAME_END;
     r->clearRoom(r);
 }
@@ -190,6 +194,7 @@ void gameRoom::placeCard(int id, std::string card) {
         if (users.at(i).uId == id && users.at(i).cards.size() == 0) {
             info.isOver = true;
             info.winner = id;
+            messenger::sendMsgAll(users,"S_CONSOLE_INFO:Hráč " + users.at(info.winner).name + " je vítěz. Gratulace!#\n");
             return;
         } else if (users.at(i).uId == id && info.onTurnId == i) {
             for (int j = 0; j < users.at(i).cards.size(); ++j) {
@@ -200,14 +205,16 @@ void gameRoom::placeCard(int id, std::string card) {
                     if (users.at(info.lastTurnId).cards.size() == 0) {
                         info.isOver = true;
                         info.winner = info.lastTurnId;
+                        messenger::sendMsgAll(users,"S_CONSOLE_INFO:Hráč " + users.at(info.winner).name + " je vítěz. Gratulace!#\n");
                         return;
                     } else if (users.at(i).cards.size() == 0 && info.cards.size() == 1) {
                         info.isOver = true;
                         info.winner = id;
+                        messenger::sendMsgAll(users,"S_CONSOLE_INFO:Hráč " + users.at(info.winner).name + " je vítěz. Gratulace!#\n");
                         return;
                     }
                     info.lastTurnId = i;
-                    messenger::sendMsgAll(users, "S_PLACED_CARD:" + std::to_string(info.lastTurnId) + "#" += '\n');
+                    messenger::sendMsgAll(users, "S_PLACED_CARD:" + users.at(info.lastTurnId).name + "#" += '\n');
                     break;
                 }
             }
@@ -234,8 +241,8 @@ void gameRoom::givePackToLast(int pos) {
         info.cards.pop_back();
     }
     info.onTurnId = pos;
-    messenger::sendMsgAll(users, "S_ROOM_INFO:Hráč s id " + std::to_string(info.lastTurnId) +
-                                 " podváděl a bere balíček. Na tahu je hráč " + std::to_string(info.onTurnId) += '\n');
+    messenger::sendMsgAll(users, "S_CONSOLE_INFO:Hráč " + users.at(info.lastTurnId).name +
+                                 " podváděl a bere balíček. Na tahu je hráč " + users.at(info.onTurnId).name + "#\n");
 }
 
 void gameRoom::takePack(int pos) {
@@ -245,8 +252,8 @@ void gameRoom::takePack(int pos) {
         info.cards.pop_back();
     }
     info.onTurnId = info.lastTurnId;
-    messenger::sendMsgAll(users, "S_ROOM_INFO:Hráč s id " + std::to_string(info.lastTurnId) +
-                                 " nepodváděl a je na tahu. Balíček bere hráč " + std::to_string(pos) += '\n');
+    messenger::sendMsgAll(users, "S_CONSOLE_INFO:Hráč " + users.at(info.lastTurnId).name +
+                                 " nepodváděl a je na tahu. Balíček bere hráč " + users.at(pos).name +"#\n");
 }
 
 void gameRoom::nextPlayer() {
@@ -264,19 +271,19 @@ void gameRoom::checkOnlinePlayers() {
         if (roomStatus != RoomStatus::ROOM_WAIT) {
             roomStatus = RoomStatus::GAME_WAITING;
             disconnectTime.start();
-            messenger::sendMsgAll(users, "S_ROOM_INFO:Hráč s id " + std::to_string(dcPlayer) +
-                                         " ztratil spojení. Čeká se na reconnect.\n");
+            messenger::sendMsgAll(users, "S_CONSOLE_INFO:Hráč " + users.at(dcPlayer).name +
+                    " ztratil spojení. Čeká se na reconnect.#\n");
             while (disconnectTime.elapsedTime() < MAX_DISC_TIME) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
                 if (roomStatus == RoomStatus::GAME_IN_PROGRESS) {
-                    messenger::sendMsgAll(users, "S_ROOM_INFO:Hráč s id " + std::to_string(dcPlayer) +
-                                                 " se znovu připojil. Hra pokračuje!\n");
+                    messenger::sendMsgAll(users, "S_CONSOLE_INFO:Hráč " + users.at(dcPlayer).name +
+                            " se znovu připojil. Hra pokračuje!#\n");
                     return;
                 }
             }
         }
         for (int i = 0; i < users.size(); ++i) {
-            if (!users.at(i).isOnline){
+            if (!users.at(i).isOnline) {
                 shutdown(users.at(i).uId, SHUT_RDWR);
                 close(users.at(i).uId);
                 removePlayer(users.at(i).uId);
@@ -284,7 +291,7 @@ void gameRoom::checkOnlinePlayers() {
             }
         }
         messenger::sendMsgAll(users,
-                              "S_ROOM_INFO:Hráč s id " + std::to_string(dcPlayer) + " byl vyhozen ze hry. Hra končí\n");
+                              "S_CONSOLE_INFO:Hráč " + std::to_string(dcPlayer) + " byl vyhozen ze hry. Hra končí!#\n");
     }
 }
 
