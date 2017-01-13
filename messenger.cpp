@@ -11,7 +11,7 @@ void messenger::sendMsg(int socket, std::string msg) {
 
 void messenger::sendMsgAll(std::vector<players::User> players, std::string msg) {
     for (int i = 0; i < players.size(); i++) {
-        if (players.at(i).uId != 0) {
+        if (players.at(i).uId != 0 && players.at(i).isOnline) {
             sendMsg(players.at(i).uId, msg);
         }
     }
@@ -19,7 +19,7 @@ void messenger::sendMsgAll(std::vector<players::User> players, std::string msg) 
 
 void messenger::sendMsgAllOthers(int uid, std::vector<players::User> players, std::string msg) {
     for (int i = 0; i < players.size(); i++) {
-        if (players.at(i).uId != 0 && players.at(i).uId != uid) {
+        if (players.at(i).uId != 0 && players.at(i).uId != uid && players.at(i).isOnline) {
             sendMsg(players.at(i).uId, msg);
         }
     }
