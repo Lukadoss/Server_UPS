@@ -14,6 +14,7 @@
 #include "timer.h"
 #include "stl.h"
 #include "messenger.h"
+#include <iostream>
 
 class server;
 
@@ -52,7 +53,7 @@ public:
 
     bool playerInOtherRoom(players::User player);
 
-    bool playerAlreadyJoined(int uId);
+    bool playerAlreadyJoined(int id);
 
     void setPlayerReady(int playerId, bool ready);
 

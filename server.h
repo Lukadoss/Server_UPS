@@ -47,7 +47,7 @@ public:
 
     bool nameAvailable(std::string name);
 
-    void logoutUsr(int socket);
+    void logoutUsr(int socket, int i);
 
     void sendRoomInfo(int socket);
 
@@ -62,6 +62,8 @@ public:
     players::User getUserById(int id);
 
     bool userIsDced(std::string name);
+
+    bool checkPlayer(int sd);
 };
 
 #endif //UPS_SERVER_SERVER_H

@@ -2,8 +2,6 @@
 // Created by Lukado on 27/10/16.
 //
 
-#include <iostream>
-#include <unistd.h>
 #include "gameRoom.h"
 
 gameRoom::gameRoom() {
@@ -16,6 +14,7 @@ int gameRoom::addPlayer(players::User player) {
         if (!playerAlreadyJoined(player.uId)) {
             if (isRoomWaiting()) {
                 player.roomId = roomId;
+                player.isOnline = true;
                 users.push_back(player);
 
                 numPlaying++;
@@ -56,9 +55,9 @@ bool gameRoom::playerInOtherRoom(players::User player) {
     return player.roomId > -1;
 }
 
-bool gameRoom::playerAlreadyJoined(int uId) {
+bool gameRoom::playerAlreadyJoined(int id) {
     for (int i = 0; i < numPlaying; i++) {
-        if (uId == users.at(i).uId) return true;
+        if (id == users.at(i).uId && users.at(i).isOnline) return true;
     }
     return false;
 }
@@ -196,7 +195,10 @@ void gameRoom::giveCardsToPlayers() {
 
 void gameRoom::placeCard(int id, std::string card) {
     if(roomStatus==RoomStatus::GAME_WAITING){
-        messenger::sendMsg(id, "S_CONSOLE_INFO: Čeká se na reconnect hráče#\n");
+        messenger::sendMsg(id, "S_CONSOLE_INFO:Čeká se na reconnect hráče#\n");
+        return;
+    }else if(roomStatus==RoomStatus::ROOM_WAIT || roomStatus==RoomStatus::GAME_END){
+        messenger::sendMsg(id, "S_MSG_NOT_VALID#\n");
         return;
     }
     for (int i = 0; i < users.size(); ++i) {
@@ -237,7 +239,7 @@ void gameRoom::placeCard(int id, std::string card) {
 void gameRoom::checkTopCard(int id) {
     if(roomStatus==RoomStatus::GAME_IN_PROGRESS) {
         if (info.cards.size() < 1) {
-            messenger::sendMsg(id, "S_MSG_NOT_VALID#\n");
+            messenger::sendMsg(id, "S_CONSOLE_INFO:Balíček je prázdný#\n");
             return;
         }else {
             for (int i = 0; i < users.size(); ++i) {
@@ -284,7 +286,7 @@ void gameRoom::nextPlayer() {
 
 void gameRoom::checkOnlinePlayers() {
     timer disconnectTime;
-    const int MAX_DISC_TIME = 30;
+    const int MAX_DISC_TIME = 45;
 
     int dcPlayer = getDcPlayer();
 
@@ -303,8 +305,6 @@ void gameRoom::checkOnlinePlayers() {
         }
         for (int i = 0; i < users.size(); ++i) {
             if (!users.at(i).isOnline) {
-                shutdown(users.at(i).uId, SHUT_RDWR);
-                close(users.at(i).uId);
                 removePlayer(users.at(i).uId);
                 i--;
             }
@@ -325,7 +325,8 @@ void gameRoom::reconnect(int socket, int pos) {
     roomStatus = RoomStatus::GAME_IN_PROGRESS;
     messenger::sendMsg(socket, "S_CARDS_OWNED:" + getPlayerCards(pos));
     messenger::sendMsg(socket, "S_STACK_CARDS:" + std::to_string(info.cards.size()) + "#\n");
-}
+    messenger::sendMsg(socket, "S_ON_TURN:" + users.at(info.onTurnId).name + ":" +
+                                    users.at(info.lastTurnId).name + "#\n");}
 
 std::string gameRoom::getPlayerCards(int i) {
     std::string cards = "";
