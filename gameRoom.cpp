@@ -261,10 +261,12 @@ void gameRoom::givePackToLast(int pos) {
         users.at(info.lastTurnId).cards.push_back(info.cards.back());
         info.cards.pop_back();
     }
-    info.onTurnId = pos;
-    messenger::sendMsgAll(users, "S_ON_TURN:" + users.at(info.onTurnId).name + ":" + users.at(info.lastTurnId).name + "#\n");
+    messenger::sendMsg(users.at(info.lastTurnId).uId, "S_CARDS_OWNED:" + getPlayerCards(info.lastTurnId));
     messenger::sendMsgAll(users, "S_CONSOLE_INFO:Hráč " + users.at(info.lastTurnId).name +
-                                 " podváděl a bere balíček. Na tahu je hráč " + users.at(info.onTurnId).name + "#\n");
+                                 " podváděl a bere balíček. Na tahu je hráč " + users.at(pos).name + "#\n");
+    info.onTurnId = pos;
+    info.lastTurnId = pos;
+    messenger::sendMsgAll(users, "S_ON_TURN:" + users.at(info.onTurnId).name + ":" + users.at(info.lastTurnId).name + "#\n");
 }
 
 void gameRoom::takePack(int pos) {
@@ -273,10 +275,11 @@ void gameRoom::takePack(int pos) {
         users.at(pos).cards.push_back(info.cards.back());
         info.cards.pop_back();
     }
+    messenger::sendMsg(users.at(pos).uId, "S_CARDS_OWNED:" + getPlayerCards(pos));
     info.onTurnId = info.lastTurnId;
-    messenger::sendMsgAll(users, "S_ON_TURN:" + users.at(info.onTurnId).name + ":" + users.at(info.lastTurnId).name + "#\n");
     messenger::sendMsgAll(users, "S_CONSOLE_INFO:Hráč " + users.at(info.lastTurnId).name +
                                  " nepodváděl a je na tahu. Balíček bere hráč " + users.at(pos).name + "#\n");
+    messenger::sendMsgAll(users, "S_ON_TURN:" + users.at(info.onTurnId).name + ":" + users.at(info.lastTurnId).name + "#\n");
 }
 
 void gameRoom::nextPlayer() {
