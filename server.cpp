@@ -364,7 +364,7 @@ bool server::userIsDced(std::string name) {
 
 void server::sendRoomInfo(int socket) {
     players::User player = getUserById(socket);
-    if(player.uId != -1){
+    if(player.uId != -1 && player.isOnline){
         if(gameRooms.at(player.roomId)->users.size()>1) {
             for (int j = 0; j < gameRooms.at(player.roomId)->users.size(); ++j) {
                 if (player.uId != gameRooms.at(player.roomId)->users.at(j).uId) {
