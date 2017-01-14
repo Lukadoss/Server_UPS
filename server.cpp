@@ -3,11 +3,27 @@
 //
 
 #include "server.h"
-
-const int SERVER_PORT = 2222;
+int MAX_CONNECTED;
+int MAX_ROOMS;
+int MAX_PLAYING;
+std::string IP;
 
 server::server() {
-    serverPort = SERVER_PORT;
+    IP = "INADDR_ANY";
+    MAX_ROOMS = 2;
+    MAX_PLAYING = 7;
+    MAX_CONNECTED = MAX_ROOMS*MAX_PLAYING;
+    serverPort = 2222;
+    clientSockets = new int[MAX_CONNECTED];
+}
+
+server::server(std::string ipAddr, int port, int maxrooms, int maxplaying) {
+    IP = ipAddr;
+    MAX_ROOMS = maxrooms;
+    MAX_PLAYING = maxplaying;
+    MAX_CONNECTED = MAX_ROOMS*MAX_PLAYING;
+    serverPort = port;
+    clientSockets = new int[MAX_CONNECTED];
 }
 
 void server::start() {
@@ -33,36 +49,42 @@ void server::start() {
     //struktura sockAddr
     memset(&sockAddr, '\0', sizeof(sockAddr));
     sockAddr.sin_family = AF_INET;
-    sockAddr.sin_addr.s_addr = INADDR_ANY; //inet_addr("127.0.0.1"); nebo INADDR_ANY;
+    if (IP.compare("INADDR_ANY")==0) {
+        sockAddr.sin_addr.s_addr = INADDR_ANY;
+    } else if (IP.compare("localhost")==0) {
+        sockAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    } else {
+        sockAddr.sin_addr.s_addr = inet_addr(IP.c_str());
+    }
     sockAddr.sin_port = htons((uint16_t) serverPort);
 
     std::string serverAddress = inet_ntoa(sockAddr.sin_addr);
     std::string serverPort = std::to_string(ntohs(sockAddr.sin_port));
     consoleOut("Server address: " + serverAddress);
     consoleOut("Server port: " + serverPort);
-
     //Bind socketu
     if (bind(sockfd, (struct sockaddr *) &sockAddr, sizeof(sockAddr)) < 0) {
-        consoleOut("Bindování socketu se nezdařilo");
+        consoleOut("Bind socketu se nezdařil");
         exit(1);
     }
 
     //listen
-    if (listen(sockfd, MAX_CONNECTED + CONNECT_QUEUE) < 0) {
+    if (listen(sockfd, MAX_CONNECTED+QUEUE) < 0) {
         consoleOut("Chyba při naslouchání");
         exit(1);
     }
 
-    consoleOut("Inicializace herních místností");
-    gameRooms = std::vector<gameRoom *>(MAX_SMALL_ROOMS);
+    consoleOut("Počet herních místností: " +std::to_string(MAX_ROOMS));
+    consoleOut("Maximální počet hráčů v místnosti: "+std::to_string(MAX_PLAYING));
+    gameRooms = std::vector<gameRoom *>(MAX_ROOMS);
 
-    for (int j = 0; j < MAX_SMALL_ROOMS; ++j) {
+    for (int j = 0; j < MAX_ROOMS; ++j) {
         gameRooms.at(j) = new gameRoom();
     }
 
     for (int i = 0; i < gameRooms.size(); ++i) {
         gameRooms.at(i)->numPlaying = 0;
-        gameRooms.at(i)->maxPlaying = 7;
+        gameRooms.at(i)->maxPlaying = MAX_PLAYING;
         gameRooms.at(i)->roomName = "Game room " + std::to_string(i);
         gameRooms.at(i)->isFull = false;
         gameRooms.at(i)->users = std::vector<players::User>();
@@ -137,6 +159,7 @@ void server::start() {
                             break;
                         case msgtable::C_PUT_CARD:
                             if (splittedMsg[1].length() == 1) isOnTurn(sd, splittedMsg[1]);
+                            else messenger::sendMsg(sd, "S_MSG_NOT_VALID#\n");
                             break;
                         case msgtable::C_CHECK_CHEAT:
                             checkCheat(sd);
@@ -150,6 +173,7 @@ void server::start() {
                             clientSockets[i] = 0;
                             break;
                         case msgtable::NO_CODE:
+                            messenger::sendMsg(sd, "S_MSG_NOT_VALID#\n");
                             break;
                         default:
                             break;
@@ -197,7 +221,10 @@ std::string server::receiveMsg(int socket) {
 
 bool server::loginUsr(int socket, std::string name) {
     for (int i = 0; i < gameRooms.size(); ++i) {
-        if (gameRooms.at(i)->playerAlreadyJoined(socket)) return true;
+        if (gameRooms.at(i)->playerAlreadyJoined(socket)) {
+            messenger::sendMsg(socket, "S_MSG_NOT_VALID#\n");
+            return true;
+        }
     }
     if (!serverFull) {
         if (nameAvailable(name)) {
@@ -214,7 +241,6 @@ bool server::loginUsr(int socket, std::string name) {
             }
 
             FD_SET(socket, &socketSet);
-            messenger::sendMsg(socket, ("S_LOGGED:" + name + "#" += '\n'));
             assignUsrToRoom(player);
             return true;
         } else if (userIsDced(name)) {
@@ -222,17 +248,19 @@ bool server::loginUsr(int socket, std::string name) {
                 for (int j = 0; j < gameRooms.at(i)->users.size(); ++j) {
                     if (gameRooms.at(i)->users.at(j).name == name) {
                         gameRooms.at(i)->reconnect(socket, j);
+                        consoleOut("Uživatel "+name+" se znovu připojil do hry\n");
+                        return true;
                     }
                 }
             }
         } else {
-            messenger::sendMsg(socket, "S_NAME_EXISTS:" + name + "#" += '\n');
+            messenger::sendMsg(socket, "S_NAME_EXISTS:" + name + "#\n");
             FD_CLR(socket, &socketSet);
             close(socket);
             return false;
         }
     } else {
-        messenger::sendMsg(socket, "S_SERVER_FULL#" + '\n');
+        messenger::sendMsg(socket, "S_SERVER_FULL#\n");
         FD_CLR(socket, &socketSet);
         close(socket);
         return false;
@@ -298,6 +326,8 @@ void server::isOnTurn(int sd, std::string card) {
     players::User player = getUserById(sd);
     if (player.uId != -1) {
         gameRooms.at(player.roomId)->placeCard(sd, card);
+    }else{
+        messenger::sendMsg(sd, "S_MSG_NOT_VALID#\n");
     }
 }
 
@@ -305,6 +335,8 @@ void server::checkCheat(int sd) {
     players::User player = getUserById(sd);
     if (player.uId != -1) {
         gameRooms.at(player.roomId)->checkTopCard(sd);
+    }else{
+        messenger::sendMsg(sd, "S_MSG_NOT_VALID#\n");
     }
 }
 
@@ -332,12 +364,15 @@ bool server::userIsDced(std::string name) {
 
 void server::sendRoomInfo(int socket) {
     players::User player = getUserById(socket);
-    for (int j = 0; j < gameRooms.at(player.roomId)->users.size(); ++j) {
-        if (player.uId != gameRooms.at(player.roomId)->users.at(j).uId) {
-            messenger::sendMsg(player.uId, "S_ROOM_INFO:" + std::to_string(j) + ":" +
-                                           gameRooms.at(player.roomId)->users.at(j).name + ":" +
-                                           std::to_string(gameRooms.at(player.roomId)->users.at(j).isReady) + "#\n");
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    if(player.uId != -1){
+        for (int j = 0; j < gameRooms.at(player.roomId)->users.size(); ++j) {
+            if (player.uId != gameRooms.at(player.roomId)->users.at(j).uId) {
+                messenger::sendMsg(player.uId, "S_ROOM_INFO:" + std::to_string(j) + ":" +
+                                               gameRooms.at(player.roomId)->users.at(j).name + ":" +
+                                               std::to_string(gameRooms.at(player.roomId)->users.at(j).isReady) + "#\n");
+            }
         }
+    }else{
+        messenger::sendMsg(sd, "S_MSG_NOT_VALID#\n");
     }
 }

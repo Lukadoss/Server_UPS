@@ -15,9 +15,7 @@
 #include "server.h"
 #include "msgTable.h"
 
-#define MAX_CONNECTED 14
-#define CONNECT_QUEUE 5
-#define MAX_SMALL_ROOMS 2
+#define QUEUE 5
 
 class server {
     int serverPort;
@@ -26,7 +24,7 @@ class server {
     bool serverFull;
     int max_socketDesc;
     int sd;
-    int clientSockets[MAX_CONNECTED];
+    int *clientSockets;
     int activity;
 
     fd_set socketSet;
@@ -36,6 +34,8 @@ class server {
     std::vector<gameRoom *> gameRooms;
 public:
     server();
+
+    server(std::string ipAddr, int port, int maxrooms, int maxconn);
 
     void start();
 

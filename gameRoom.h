@@ -90,6 +90,8 @@ private:
     int getDcPlayer();
 
     std::string getPlayerCards(int i);
+
+    void consoleOut(std::string msg);
 };
 
 #endif //UPS_SERVER_GAMEROOM_H

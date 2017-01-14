@@ -8,6 +8,7 @@
 #include <string>
 #include <sys/socket.h>
 #include "players.h"
+#include <thread>
 
 class messenger {
 
