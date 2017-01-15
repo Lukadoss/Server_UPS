@@ -51,10 +51,15 @@ void server::start() {
     memset(&sockAddr, '\0', sizeof(sockAddr));
     sockAddr.sin_family = AF_INET;
     if (IP.compare("INADDR_ANY") == 0) {
-        sockAddr.sin_addr.s_addr = INADDR_ANY;
+        sockAddr.sin_addr.s_addr = htonl(INADDR_ANY);
     } else if (IP.compare("localhost") == 0) {
         sockAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
     } else {
+        in_addr_t adr = inet_addr(IP.c_str());
+        if(adr==-1) {
+            std::cout<<"IP adresa není validní"<<std::endl;
+            exit(1);
+        }
         sockAddr.sin_addr.s_addr = inet_addr(IP.c_str());
     }
     sockAddr.sin_port = htons((uint16_t) serverPort);
@@ -368,7 +373,7 @@ void server::sendRoomInfo(int socket) {
     if (player.uId != -1 && player.isOnline) {
         if (gameRooms.at(player.roomId)->users.size() > 1) {
             for (int j = 0; j < gameRooms.at(player.roomId)->users.size(); ++j) {
-                if (player.uId != gameRooms.at(player.roomId)->users.at(j).uId) {
+                if (player.name.compare(gameRooms.at(player.roomId)->users.at(j).name)!=0) {
                     messenger::sendMsg(player.uId, "S_ROOM_INFO:" + gameRooms.at(player.roomId)->users.at(j).name + ":" +
                                                    std::to_string(gameRooms.at(player.roomId)->users.at(j).isReady) +
                                                    ":" + std::to_string(

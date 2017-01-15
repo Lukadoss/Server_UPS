@@ -182,6 +182,7 @@ void gameRoom::clearRoom(gameRoom *r) {
     r->info.lastTurnId = 0;
     for (int i = 0; i < users.size(); ++i) {
         users.at(i).isReady = false;
+        users.at(i).cards.clear();
     }
     while(r->info.cards.size()>0) r->info.cards.pop_back();
     r->roomStatus = RoomStatus::ROOM_WAIT;
@@ -254,8 +255,8 @@ void gameRoom::placeCard(int id, std::string card) {
 
 void gameRoom::checkTopCard(int id) {
     if (roomStatus == RoomStatus::GAME_IN_PROGRESS) {
-        if (info.cards.size() < 1) {
-            messenger::sendMsg(id, "S_CONSOLE_INFO:Balíček je prázdný#\n");
+        if (info.cards.size() < 2) {
+            messenger::sendMsg(id, "S_CONSOLE_INFO:Balíček je prázdný nebo pouze s počáteční kartou#\n");
             return;
         } else {
             for (int i = 0; i < users.size(); ++i) {
