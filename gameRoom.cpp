@@ -22,9 +22,7 @@ int gameRoom::addPlayer(players::User player) {
                     isFull = true;
                 }
                 messenger::sendMsg(player.uId, ("S_LOGGED:" + player.name + "#" += '\n'));
-                messenger::sendMsgAllOthers(player.uId, users,
-                                            "S_USR_JOINED:" + std::to_string(users.size() - 1) + ":" + player.name +
-                                            "#\n");
+                messenger::sendMsgAllOthers(player.uId, users, "S_USR_JOINED:"+ player.name + "#\n");
 
                 return roomId;
             } else return -1;
@@ -161,6 +159,11 @@ void gameRoom::loop(gameRoom *r) {
                                             r->users.at(r->info.lastTurnId).name + ":" +
                                             std::to_string(r->users.at(r->info.lastTurnId).cards.size()) + "#\n");
             previousStackNum = r->info.cards.size();
+            std::string firstStackCard = "X";
+            if(r->info.cards.size()>0){
+                firstStackCard = r->info.cards.at(0).c_str();
+            }
+            messenger::sendMsgAll(r->users, "S_STACK_CARDS:" + std::to_string(r->info.cards.size()) + ":"+ firstStackCard +"#\n");
         }
         if (r->info.cards.size() == 0 && previousStackNum != 0) previousStackNum = 0;
 
@@ -180,6 +183,7 @@ void gameRoom::clearRoom(gameRoom *r) {
     for (int i = 0; i < users.size(); ++i) {
         users.at(i).isReady = false;
     }
+    while(r->info.cards.size()>0) r->info.cards.pop_back();
     r->roomStatus = RoomStatus::ROOM_WAIT;
 }
 
@@ -198,7 +202,11 @@ void gameRoom::giveCardsToPlayers() {
     for (int i = 0; i < users.size(); ++i) {
         messenger::sendMsg(users.at(i).uId, "S_CARDS_OWNED:" + getPlayerCards(i));
     }
-    messenger::sendMsgAll(users, "S_STACK_CARDS:" + std::to_string(info.cards.size()) += "#\n");
+    std::string firstStackCard = "X";
+    if(info.cards.size()>0){
+        firstStackCard = info.cards.at(0).c_str();
+    }
+    messenger::sendMsgAll(users, "S_STACK_CARDS:" + std::to_string(info.cards.size()) + ":"+ firstStackCard +"#\n");
 }
 
 void gameRoom::placeCard(int id, std::string card) {
@@ -351,7 +359,11 @@ void gameRoom::sendReconnectInfo(int socket, int pos) {
     if (roomStatus == RoomStatus::GAME_WAITING) {
         roomStatus = RoomStatus::GAME_IN_PROGRESS;
         messenger::sendMsg(socket, "S_CARDS_OWNED:" + getPlayerCards(pos));
-        messenger::sendMsg(socket, "S_STACK_CARDS:" + std::to_string(info.cards.size()) + "#\n");
+        std::string firstStackCard = "X";
+        if(info.cards.size()>0){
+            firstStackCard = info.cards.at(0).c_str();
+        }
+        messenger::sendMsg(socket, "S_STACK_CARDS:" + std::to_string(info.cards.size()) +":"+firstStackCard+"#\n");
         messenger::sendMsg(socket, "S_ON_TURN:" + users.at(info.onTurnId).name + ":" +
                                    users.at(info.lastTurnId).name + ":" +
                                    std::to_string(users.at(info.lastTurnId).cards.size()) + "#\n");
