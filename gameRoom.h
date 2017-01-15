@@ -75,6 +75,8 @@ public:
 
     void reconnect(int socket, int pos);
 
+    void sendReconnectInfo(int socket, int pos);
+
 private:
     std::thread gameThread;
 
@@ -90,9 +92,9 @@ private:
 
     int getDcPlayer();
 
-    std::string getPlayerCards(int i);
-
     void consoleOut(std::string msg);
+
+    std::string getPlayerCards(int i);
 };
 
 #endif //UPS_SERVER_GAMEROOM_H
