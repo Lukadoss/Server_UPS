@@ -164,8 +164,7 @@ void gameRoom::loop(gameRoom *r) {
                 firstStackCard = r->info.cards.at(0).c_str();
             }
             messenger::sendMsgAll(r->users, "S_STACK_CARDS:" + std::to_string(r->info.cards.size()) + ":"+ firstStackCard +"#\n");
-        }
-        if (r->info.cards.size() == 0 && previousStackNum != 0) previousStackNum = 0;
+        }else if(r->info.cards.size() == 0 && previousStackNum != 0) previousStackNum = 0;
 
         r->checkOnlinePlayers();
 
@@ -261,6 +260,7 @@ void gameRoom::checkTopCard(int id) {
         } else {
             for (int i = 0; i < users.size(); ++i) {
                 if (users.at(i).uId == id) {
+                    messenger::sendMsgAll(users, "S_CHEATED_CARD:"+info.cards.back()+"#\n");
                     if (info.cards.front() == info.cards.back()) takePack(i);
                     else givePackToLast(i);
                     break;
@@ -286,6 +286,12 @@ void gameRoom::givePackToLast(int pos) {
                                  " podváděl a bere balíček. Na tahu je hráč " + users.at(pos).name + "#\n");
     info.onTurnId = pos;
     info.lastTurnId = pos;
+    if(users.at(info.onTurnId).cards.size()==0){
+        info.isOver = true;
+        info.winner = info.onTurnId;
+        messenger::sendMsgAll(users, "S_GAME_WINNER:" + users.at(info.winner).name + "#\n");
+        return;
+    }
     messenger::sendMsgAll(users,
                           "S_ON_TURN:" + users.at(info.onTurnId).name + ":" + users.at(info.lastTurnId).name + ":" +
                           std::to_string(users.at(info.lastTurnId).cards.size()) + "#\n");
@@ -303,12 +309,20 @@ void gameRoom::takePack(int pos) {
     info.onTurnId = info.lastTurnId;
     messenger::sendMsgAll(users, "S_CONSOLE_INFO:Hráč " + users.at(info.lastTurnId).name +
                                  " nepodváděl a je na tahu. Balíček bere hráč " + users.at(pos).name + "#\n");
+
+    if(users.at(info.onTurnId).cards.size()==0){
+        info.isOver = true;
+        info.winner = info.onTurnId;
+        messenger::sendMsgAll(users, "S_GAME_WINNER:" + users.at(info.winner).name + "#\n");
+        return;
+    }
     messenger::sendMsgAll(users,
                           "S_ON_TURN:" + users.at(info.onTurnId).name + ":" + users.at(info.lastTurnId).name + ":" +
                           std::to_string(users.at(info.lastTurnId).cards.size()) + "#\n");
 }
 
 void gameRoom::nextPlayer() {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     if (users.size() - 1 != info.onTurnId) info.onTurnId++;
     else info.onTurnId = 0;
 }

@@ -1,7 +1,3 @@
-//
-// Created by Lukado on 22/10/16.
-//
-
 #include "stl.h"
 
 std::vector<std::string> stl::splitMsg(std::string msg) {

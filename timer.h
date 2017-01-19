@@ -1,7 +1,3 @@
-//
-// Created by Lukado on 22/12/16.
-//
-
 #ifndef UPS_SERVER_TIMER_H
 #define UPS_SERVER_TIMER_H
 

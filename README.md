@@ -1,2 +1,2 @@
 # UPS-server
-Uplakaný server pro šikanu. Teda švindl #staySvastika
+Uplakaný server pro šikanu. Teda švindl
