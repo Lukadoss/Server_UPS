@@ -329,7 +329,7 @@ void gameRoom::nextPlayer() {
 
 void gameRoom::checkOnlinePlayers() {
     timer disconnectTime;
-    const int MAX_DISC_TIME = 10;
+    const int MAX_DISC_TIME = 45;
 
     int dcPlayer = getDcPlayer();
 
