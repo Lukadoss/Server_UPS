@@ -344,8 +344,8 @@ void server::checkCheat(int sd) {
 players::User server::getUserById(int id) {
     for (int i = 0; i < gameRooms.size(); i++) {
         for (int j = 0; j < gameRooms.at(i)->users.size(); ++j) {
-            if (gameRooms.at(i)->users.at(j).uId == id) return gameRooms.at(i)->users.at(j);
-        }
+            if (gameRooms.at(i)->users.at(j).uId == id && gameRooms.at(i)->users.at(j).isOnline) return gameRooms.at(i)->users.at(j);
+        }//TODO: pokud vypadne nějaká chyba, je tady. Upravil sem to pred 5min
     }
     players::User user;
     user.uId = -1;
