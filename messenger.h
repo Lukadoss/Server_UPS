@@ -10,6 +10,8 @@
 #include "players.h"
 #include <thread>
 
+#define MSG_DELIMITER ':'
+
 class messenger {
 
 public:
@@ -18,6 +20,8 @@ public:
     static void sendMsgAll(std::vector<players::User> players, std::string msg);
 
     static void sendMsgAllOthers(int uid, std::vector<players::User> players, std::string msg);
+
+    static std::vector<std::string> splitMsg(std::string msg);
 };
 
 

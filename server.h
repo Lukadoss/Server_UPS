@@ -53,7 +53,7 @@ public:
 
     void setUsrReady(int playerId);
 
-    void assignUsrToRoom(players::User player);
+    bool assignUsrToRoom(players::User player);
 
     void isOnTurn(int sd, std::string card);
 

@@ -140,7 +140,7 @@ void server::start() {
             if (FD_ISSET(sd, &socketSet)) {
                 std::string incMsg = receiveMsg(sd);
                 if (incMsg.size() > 0) {
-                    std::vector<std::string> splittedMsg = stl::splitMsg(incMsg);
+                    std::vector<std::string> splittedMsg = messenger::splitMsg(incMsg);
                     switch (msgtable::getType(splittedMsg[0])) {
                         case msgtable::C_LOGIN:
                             if (checkPlayer(sd)) break;
@@ -230,8 +230,9 @@ bool server::loginUsr(int socket, std::string name) {
             player.isReady = false;
             player.isOnline = false;
 
+            if(!assignUsrToRoom(player)) return true;
+
             FD_SET(socket, &socketSet);
-            assignUsrToRoom(player);
             connectedUsers = 0;
             for (int i = 0; i < gameRooms.size(); i++) connectedUsers += gameRooms.at(i)->users.size();
             if (connectedUsers >= MAX_CONNECTED) {
@@ -250,9 +251,7 @@ bool server::loginUsr(int socket, std::string name) {
             }
         } else {
             messenger::sendMsg(socket, "S_NAME_EXISTS:" + name + "#\n");
-            FD_CLR(socket, &socketSet);
-            close(socket);
-            return false;
+            return true;
         }
     } else {
         messenger::sendMsg(socket, "S_SERVER_FULL#\n");
@@ -262,7 +261,7 @@ bool server::loginUsr(int socket, std::string name) {
     }
 }
 
-void server::assignUsrToRoom(players::User player) {
+bool server::assignUsrToRoom(players::User player) {
     int newRoomId = -1;
     for (int i = 0; i < gameRooms.size(); i++) {
         if (!gameRooms.at(i)->isFull) {
@@ -274,8 +273,10 @@ void server::assignUsrToRoom(players::User player) {
     if (newRoomId > -1) {
         consoleOut("[Místnost " + std::to_string(newRoomId) + "] Hráč s id " + std::to_string(player.uId) +
                    " vstoupil do místnosti");
+        return true;
     } else {
-        messenger::sendMsg(player.uId, "S_JOIN_ERR:" + std::to_string(newRoomId) + "#\n");
+        messenger::sendMsg(player.uId, "S_JOIN_ERR:#\n");
+        return false;
     }
 }
 

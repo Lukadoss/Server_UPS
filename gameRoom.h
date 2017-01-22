@@ -11,8 +11,6 @@
 #include <algorithm>
 #include <chrono>
 #include "players.h"
-#include "timer.h"
-#include "stl.h"
 #include "messenger.h"
 #include <iostream>
 
@@ -78,6 +76,9 @@ public:
     void sendReconnectInfo(int socket, int pos);
 
 private:
+    struct timespec startTime, finishTime;
+    double elapsed;
+
     std::thread gameThread;
 
     static void loop(gameRoom *r);
@@ -95,6 +96,10 @@ private:
     void consoleOut(std::string msg);
 
     std::string getPlayerCards(int i);
+
+    void startTimer();
+
+    double elapsedTime();
 };
 
 #endif //UPS_SERVER_GAMEROOM_H

@@ -191,14 +191,13 @@ void gameRoom::giveCardsToPlayers() {
     double cardsforplayer = floor(info.cards.size() / numPlaying);
     for (int i = 0; i < numPlaying; ++i) {
         users.at(i).cards = std::vector<std::string>();
-    }
-    for (int i = 0; i < cardsforplayer; ++i) {
-        for (int i = 0; i < numPlaying; ++i) {
+        for (int j = 0; j < cardsforplayer; ++j) {
             std::string karta = info.cards.back();
             users.at(i).cards.push_back(karta);
             info.cards.pop_back();
         }
     }
+
     for (int i = 0; i < users.size(); ++i) {
         messenger::sendMsg(users.at(i).uId, "S_CARDS_OWNED:" + getPlayerCards(i));
     }
@@ -328,7 +327,6 @@ void gameRoom::nextPlayer() {
 }
 
 void gameRoom::checkOnlinePlayers() {
-    timer disconnectTime;
     const int MAX_DISC_TIME = 45;
 
     int dcPlayer = getDcPlayer();
@@ -336,10 +334,10 @@ void gameRoom::checkOnlinePlayers() {
     if (dcPlayer != -1) {
         if (roomStatus != RoomStatus::ROOM_WAIT) {
             roomStatus = RoomStatus::GAME_WAITING;
-            disconnectTime.start();
+            startTimer();
             messenger::sendMsgAllOthers(users.at(dcPlayer).uId, users,
                                         "S_DISCONNECT:" + users.at(dcPlayer).name + "#\n");
-            while (disconnectTime.elapsedTime() < MAX_DISC_TIME) {
+            while (elapsedTime() < MAX_DISC_TIME) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
                 if (roomStatus == RoomStatus::GAME_IN_PROGRESS) {
                     messenger::sendMsgAllOthers(users.at(dcPlayer).uId, users,
@@ -406,4 +404,15 @@ void gameRoom::consoleOut(std::string msg) {
     std::string str(buffer);
 
     std::cout << str << msg << std::endl;
+}
+
+void gameRoom::startTimer() {
+    clock_gettime(CLOCK_MONOTONIC, &this->startTime);
+}
+
+double gameRoom::elapsedTime() {
+    clock_gettime(CLOCK_MONOTONIC, &this->finishTime);
+    elapsed = (finishTime.tv_sec - startTime.tv_sec);
+    elapsed += (finishTime.tv_nsec - startTime.tv_nsec) / 1000000000.0;
+    return elapsed;
 }
