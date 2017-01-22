@@ -20,6 +20,11 @@ public:
         NO_CODE
     };
 
+    /**
+     * Navrací typ zprávy od klienta podle stringu
+     * @param msg zpráva
+     * @return enum typ
+     */
     static msgTypes getType(std::string msg);
 };
 

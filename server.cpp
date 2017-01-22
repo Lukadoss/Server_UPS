@@ -31,7 +31,6 @@ void server::start() {
     for (int i = 0; i < MAX_CONNECTED; i++) {
         clientSockets[i] = 0;
     }
-    //vytvoření socketu
     sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     if (sockfd < 0) {
@@ -43,7 +42,6 @@ void server::start() {
     int optionVal = 1;
     setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &optionVal, sizeof(optionVal));
 
-    //struktura sockAddr
     memset(&sockAddr, '\0', sizeof(sockAddr));
     sockAddr.sin_family = AF_INET;
     if (IP.compare("INADDR_ANY") == 0) {
@@ -102,7 +100,7 @@ void server::start() {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
         FD_ZERO(&socketSet);
 
-        FD_SET(sockfd, &socketSet); //přidání server socketu do setu (Selector)
+        FD_SET(sockfd, &socketSet);
         max_socketDesc = sockfd;
 
         for (int i = 0; i < (MAX_CONNECTED); i++) {

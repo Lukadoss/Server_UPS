@@ -15,12 +15,33 @@
 class messenger {
 
 public:
+    /**
+     * Pošle hráči danou zprávu
+     * @param socket id soketu
+     * @param message zpráva
+     */
     static void sendMsg(int socket, std::string message);
 
+    /**
+     * Pošle všem hráčům v místnosti stejnou zprávu
+     * @param players pole hráčů
+     * @param msg zpáva
+     */
     static void sendMsgAll(std::vector<players::User> players, std::string msg);
 
+    /**
+     * Pošle zprávu všem hráčům kromě jednoho
+     * @param uid id vynechaného soketu
+     * @param players pole hráčů
+     * @param msg zpráva
+     */
     static void sendMsgAllOthers(int uid, std::vector<players::User> players, std::string msg);
 
+    /**
+     * Rozdělení příchozí zprávy od klienta do stringů. Rozdělení podle rozdělovacího znaku.
+     * @param msg zpráva
+     * @return pole stringů
+     */
     static std::vector<std::string> splitMsg(std::string msg);
 };
 
