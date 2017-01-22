@@ -17,7 +17,8 @@ public:
         C_ROOM_INFO,
         EOS,
         ERR,
-        NO_CODE
+        NO_CODE,
+        PING
     };
 
     /**

@@ -18,6 +18,8 @@ msgtable::msgTypes msgtable::getType(std::string msg) {
         return msgtable::EOS;
     } else if (!msg.compare("ERR")) {
         return msgtable::ERR;
+    } else if (!msg.compare("PING")){
+        return msgtable::PING;
     } else {
         return msgtable::NO_CODE;
     }

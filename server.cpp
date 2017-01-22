@@ -174,6 +174,9 @@ void server::start() {
                         case msgtable::NO_CODE:
                             messenger::sendMsg(sd, "S_MSG_NOT_VALID#\n");
                             break;
+                        case msgtable::PING:
+//                            pingThread = std::thread(pingBack());
+                            break;
                         default:
                             break;
                     }
@@ -377,9 +380,6 @@ void server::sendRoomInfo(int socket) {
                     gameRooms.at(player.roomId)->sendReconnectInfo(socket, j);
                 }
             }
-            if (gameRooms.at(player.roomId)->users.at(0).cards.size() > 0) {
-                messenger::sendMsg(player.uId, "S_PLAYER_RECONNECTED#\n");
-            }
         } else {
             messenger::sendMsg(sd, "S_CONSOLE_INFO:Jsi zde sám#\n");
         }
@@ -397,3 +397,12 @@ bool server::checkPlayer(int sd) {
     }
     return false;
 }
+
+void server::pingBack() {
+
+//    while(player.isOnline){
+//
+//    }
+}
+
+

@@ -34,7 +34,11 @@ class server {
     //Pomocna promenna pro select
     int activity;
 
+    //Soket set
     fd_set socketSet;
+
+    //Vlakno pro spamovani hracu pingem
+    std::thread pingThread;
 
     //IP adresa
     struct sockaddr_in sockAddr;
@@ -148,6 +152,12 @@ public:
      * @return ano/ne
      */
     bool checkPlayer(int sd);
+
+    /**
+     * Odpovídá na ping od hráčů, udržuje spojení. Přeruší spojení v případě timeoutu.
+     * @param sd id soketu
+     */
+    void pingBack();
 };
 
 #endif //UPS_SERVER_SERVER_H

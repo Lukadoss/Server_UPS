@@ -219,7 +219,7 @@ private:
 
     /**
      * Čas, který uběhl od doby spuštění časovače
-     * @return čas v sec
+     * @return double ča
      */
     double elapsedTime();
 };
