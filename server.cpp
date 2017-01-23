@@ -408,7 +408,6 @@ void server::pingBack(int id) {
             if(gameRooms.at(i)->users.at(j).uId == id && gameRooms.at(i)->users.at(j).isOnline){
                 clock_gettime(CLOCK_MONOTONIC, &gameRooms.at(i)->users.at(j).lastPing);
                 messenger::sendMsg(id, "PONG#\n");
-                std::cout<<std::to_string(id)<<" Ponged to him"<<std::endl;
                 return;
             }
         }

@@ -18,7 +18,9 @@
 #define QUEUE 5
 
 class server {
+    //Port serveru
     int serverPort;
+    //Plny server
     bool serverFull;
 
     //Soket serveru
