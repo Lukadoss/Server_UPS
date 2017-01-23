@@ -94,6 +94,7 @@ void server::start() {
     sockaddr_in clientSocketAddr;
     int clientSocketAddrSize = sizeof(clientSocketAddr);
     int clientSocket;
+    pingThread = std::thread(startPinging, this);
 
     consoleOut("Server spuštěn, čeká na příchozí připojení");
     while (true) {
@@ -134,6 +135,7 @@ void server::start() {
         }
 
         for (int i = 0; i < MAX_CONNECTED; i++) {
+            curPos = i;
             sd = clientSockets[i];
             if (FD_ISSET(sd, &socketSet)) {
                 std::string incMsg = receiveMsg(sd);
@@ -166,16 +168,16 @@ void server::start() {
                             checkCheat(sd);
                             break;
                         case msgtable::EOS:
-                            logoutUsr(sd, i);
+                            logoutUsr(sd);
                             break;
                         case msgtable::ERR:
-                            logoutUsr(sd, i);
+                            logoutUsr(sd);
                             break;
                         case msgtable::NO_CODE:
                             messenger::sendMsg(sd, "S_MSG_NOT_VALID#\n");
                             break;
                         case msgtable::PING:
-//                            pingThread = std::thread(pingBack());
+                            pingBack(sd);
                             break;
                         default:
                             break;
@@ -230,6 +232,7 @@ bool server::loginUsr(int socket, std::string name) {
             player.roomId = -1;
             player.isReady = false;
             player.isOnline = false;
+            player.socketPos = curPos;
 
             if(!assignUsrToRoom(player)) return true;
 
@@ -256,9 +259,7 @@ bool server::loginUsr(int socket, std::string name) {
         }
     } else {
         messenger::sendMsg(socket, "S_SERVER_FULL#\n");
-        FD_CLR(socket, &socketSet);
-        close(socket);
-        return false;
+        return true;
     }
 }
 
@@ -301,8 +302,8 @@ bool server::nameAvailable(std::string name) {
     return true;
 }
 
-void server::logoutUsr(int socket, int x) {
-    players::User player = getUserById(sd);
+void server::logoutUsr(int socket) {
+    players::User player = getUserById(socket);
     if (player.uId != -1 && gameRooms.at(player.roomId)->roomStatus == gameRoom::ROOM_WAIT) {
         gameRooms.at(player.roomId)->removePlayer(player.uId);
         consoleOut("Hráč s id " + std::to_string(socket) + " se odpojil\n");
@@ -313,7 +314,7 @@ void server::logoutUsr(int socket, int x) {
     } else {
         consoleOut("Hráč s id " + std::to_string(socket) + " se odpojil\n");
     }
-    clientSockets[x] = 0;
+    clientSockets[player.socketPos] = 0;
     FD_CLR(socket, &socketSet);
     close(socket);
 
@@ -378,6 +379,7 @@ void server::sendRoomInfo(int socket) {
                             gameRooms.at(player.roomId)->users.at(j).cards.size()) + "#\n");
                 } else {
                     gameRooms.at(player.roomId)->sendReconnectInfo(socket, j);
+                    gameRooms.at(player.roomId)->users.at(j).socketPos = curPos;
                 }
             }
         } else {
@@ -398,11 +400,36 @@ bool server::checkPlayer(int sd) {
     return false;
 }
 
-void server::pingBack() {
+void server::pingBack(int id) {
+    for (int i = 0; i < gameRooms.size(); ++i) {
+        for (int j = 0; j < gameRooms.at(i)->users.size(); ++j) {
+            if(gameRooms.at(i)->users.at(j).uId == id){
+                clock_gettime(CLOCK_MONOTONIC, &gameRooms.at(i)->users.at(j).lastPing);
+                messenger::sendMsg(id, "PONG#\n");
+                return;
+            }
+        }
+    }
+    messenger::sendMsg(id, "MSG_NOT_VALID#\n");
+}
 
-//    while(player.isOnline){
-//
-//    }
+void server::startPinging(server* srv) {
+    struct timespec thisPing;
+
+    //srv->timer_running pro spravne ukoncovani threadu pri exitu
+    while(true){
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        for (int i = 0; i < srv->gameRooms.size(); ++i) {
+            for (int j = 0; j < srv->gameRooms.at(i)->users.size(); ++j) {
+                clock_gettime(CLOCK_MONOTONIC, &thisPing);
+                double elapsed = (thisPing.tv_sec - srv->gameRooms.at(i)->users.at(j).lastPing.tv_sec);
+                elapsed += (thisPing.tv_nsec - srv->gameRooms.at(i)->users.at(j).lastPing.tv_nsec) / 1000000000.0;
+                if(elapsed>500 && srv->gameRooms.at(i)->users.at(j).isOnline){
+                    srv->logoutUsr(srv->gameRooms.at(i)->users.at(j).uId);
+                }
+            }
+        }
+    }
 }
 
 

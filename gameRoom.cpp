@@ -15,6 +15,7 @@ int gameRoom::addPlayer(players::User player) {
             if (isRoomWaiting()) {
                 player.roomId = roomId;
                 player.isOnline = true;
+                clock_gettime(CLOCK_MONOTONIC, &player.lastPing);
                 users.push_back(player);
 
                 numPlaying++;
@@ -365,6 +366,7 @@ int gameRoom::getDcPlayer() {
 void gameRoom::reconnect(int socket, int pos) {
     users.at(pos).isOnline = true;
     users.at(pos).uId = socket;
+    clock_gettime(CLOCK_MONOTONIC, &users.at(pos).lastPing);
     messenger::sendMsg(socket, "S_LOGGED:" + users.at(pos).name + "#\n");
 }
 

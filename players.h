@@ -18,6 +18,8 @@ public:
         bool isReady;
         bool isOnline;
         std::vector<std::string> cards;
+        struct timespec lastPing;
+        int socketPos;
     };
 };
 

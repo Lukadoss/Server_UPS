@@ -34,6 +34,9 @@ class server {
     //Pomocna promenna pro select
     int activity;
 
+    //Momentalni pozice v socketSetu
+    int curPos;
+
     //Soket set
     fd_set socketSet;
 
@@ -98,7 +101,7 @@ public:
      * @param socket id soketu
      * @param i index v soketsetu
      */
-    void logoutUsr(int socket, int i);
+    void logoutUsr(int socket);
 
     /**
      * Vyslání zpráv o uživatelích v herní místnosti
@@ -157,7 +160,13 @@ public:
      * Odpovídá na ping od hráčů, udržuje spojení. Přeruší spojení v případě timeoutu.
      * @param sd id soketu
      */
-    void pingBack();
+    void pingBack(int sd);
+
+    /**
+     * Loop v novým vlákně pro odchytávání nereagujících hráčů
+     * @param srv instance serveru
+     */
+    static void startPinging(server* srv);
 };
 
 #endif //UPS_SERVER_SERVER_H
