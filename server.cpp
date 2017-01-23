@@ -379,6 +379,7 @@ void server::sendRoomInfo(int socket) {
                                                    std::to_string(gameRooms.at(player.roomId)->users.at(j).isReady) +
                                                    ":" + std::to_string(
                             gameRooms.at(player.roomId)->users.at(j).cards.size()) + "#\n");
+                    std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 } else {
                     gameRooms.at(player.roomId)->sendReconnectInfo(socket, j);
                     gameRooms.at(player.roomId)->users.at(j).socketPos = curPos;
