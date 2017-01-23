@@ -307,14 +307,16 @@ void server::logoutUsr(int socket) {
     if (player.uId != -1 && gameRooms.at(player.roomId)->roomStatus == gameRoom::ROOM_WAIT) {
         gameRooms.at(player.roomId)->removePlayer(player.uId);
         consoleOut("Hráč s id " + std::to_string(socket) + " se odpojil\n");
+        clientSockets[player.socketPos] = 0;
     } else if (player.uId != -1) {
         gameRooms.at(player.roomId)->setPlayerDc(player.uId);
         consoleOut("[Místnost " + std::to_string(player.roomId) + "] Čeká se na reconnect hráče s id " +
                    std::to_string(socket) + "\n");
+        clientSockets[player.socketPos] = 0;
     } else {
         consoleOut("Hráč s id " + std::to_string(socket) + " se odpojil\n");
+        clientSockets[curPos] = 0;
     }
-    clientSockets[player.socketPos] = 0;
     FD_CLR(socket, &socketSet);
     close(socket);
 
