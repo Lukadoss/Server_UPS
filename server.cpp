@@ -424,7 +424,7 @@ void server::startPinging(server* srv) {
                 clock_gettime(CLOCK_MONOTONIC, &thisPing);
                 double elapsed = (thisPing.tv_sec - srv->gameRooms.at(i)->users.at(j).lastPing.tv_sec);
                 elapsed += (thisPing.tv_nsec - srv->gameRooms.at(i)->users.at(j).lastPing.tv_nsec) / 1000000000.0;
-                if(elapsed>500 && srv->gameRooms.at(i)->users.at(j).isOnline){
+                if(elapsed>5 && srv->gameRooms.at(i)->users.at(j).isOnline){
                     srv->logoutUsr(srv->gameRooms.at(i)->users.at(j).uId);
                 }
             }
