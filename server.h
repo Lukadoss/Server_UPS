@@ -81,7 +81,7 @@ public:
      * @param socket id soketu
      * @return zpráva
      */
-    std::string receiveMsg(int socket);
+    std::vector<std::string> receiveMsg(int socket);
 
     /**
      * Přihlášení nového uživatele

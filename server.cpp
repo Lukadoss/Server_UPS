@@ -138,49 +138,52 @@ void server::start() {
             curPos = i;
             sd = clientSockets[i];
             if (FD_ISSET(sd, &socketSet)) {
-                std::string incMsg = receiveMsg(sd);
-                if (incMsg.size() > 0) {
-                    std::vector<std::string> splittedMsg = messenger::splitMsg(incMsg);
-                    switch (msgtable::getType(splittedMsg[0])) {
-                        case msgtable::C_LOGIN:
-                            if (checkPlayer(sd)) break;
-                            if (splittedMsg.size() > 1 && splittedMsg[1].length() >= 3 && splittedMsg[1].length() <= 15) {
-                                if (!loginUsr(sd, splittedMsg[1])) {
-                                    clientSockets[i] = 0;
+                std::vector<std::string> msgs = receiveMsg(sd);
+                if (msgs.size() > 0) {
+                    for (auto msg : msgs) {
+                        std::vector<std::string> splittedMsg = messenger::splitMsg(msg);
+                        switch (msgtable::getType(splittedMsg[0])) {
+                            case msgtable::C_LOGIN:
+                                if (checkPlayer(sd)) break;
+                                if (splittedMsg.size() > 1 && splittedMsg[1].length() >= 3 &&
+                                    splittedMsg[1].length() <= 15) {
+                                    if (!loginUsr(sd, splittedMsg[1])) {
+                                        clientSockets[i] = 0;
+                                    }
+                                    break;
+                                } else {
+                                    if (getUserById(sd).roomId != -1) messenger::sendMsg(sd, "S_MSG_NOT_VALID#\n");
+                                    else messenger::sendMsg(sd, "S_NICK_LEN#\n");
+                                    break;
                                 }
+                            case msgtable::C_ROOM_INFO:
+                                sendRoomInfo(sd);
                                 break;
-                            } else {
-                                if (getUserById(sd).roomId != -1) messenger::sendMsg(sd, "S_MSG_NOT_VALID#\n");
-                                else messenger::sendMsg(sd, "S_NICK_LEN#\n");
+                            case msgtable::C_USR_READY:
+                                setUsrReady(sd);
                                 break;
-                            }
-                        case msgtable::C_ROOM_INFO:
-                            sendRoomInfo(sd);
-                            break;
-                        case msgtable::C_USR_READY:
-                            setUsrReady(sd);
-                            break;
-                        case msgtable::C_PUT_CARD:
-                            if (splittedMsg[1].length() == 1) isOnTurn(sd, splittedMsg[1]);
-                            else messenger::sendMsg(sd, "S_MSG_NOT_VALID#\n");
-                            break;
-                        case msgtable::C_CHECK_CHEAT:
-                            checkCheat(sd);
-                            break;
-                        case msgtable::EOS:
-                            logoutUsr(sd);
-                            break;
-                        case msgtable::ERR:
-                            logoutUsr(sd);
-                            break;
-                        case msgtable::NO_CODE:
-                            messenger::sendMsg(sd, "S_MSG_NOT_VALID#\n");
-                            break;
-                        case msgtable::PING:
-                            pingBack(sd);
-                            break;
-                        default:
-                            break;
+                            case msgtable::C_PUT_CARD:
+                                if (splittedMsg[1].length() == 1) isOnTurn(sd, splittedMsg[1]);
+                                else messenger::sendMsg(sd, "S_MSG_NOT_VALID#\n");
+                                break;
+                            case msgtable::C_CHECK_CHEAT:
+                                checkCheat(sd);
+                                break;
+                            case msgtable::EOS:
+                                logoutUsr(sd);
+                                break;
+                            case msgtable::ERR:
+                                logoutUsr(sd);
+                                break;
+                            case msgtable::NO_CODE:
+                                messenger::sendMsg(sd, "S_MSG_NOT_VALID#\n");
+                                break;
+                            case msgtable::PING:
+                                pingBack(sd);
+                                break;
+                            default:
+                                break;
+                        }
                     }
                 }
             }
@@ -203,24 +206,33 @@ void server::consoleOut(std::string msg) {
     std::cout << str << msg << std::endl;
 }
 
-std::string server::receiveMsg(int socket) {
-    char msg[128];
-    memset(msg, '\0', 128);
-    int ret = (int) read(socket, &msg, 127);
+std::vector<std::string> server::receiveMsg(int socket) {
+    char msg[4096];
+    memset(msg, '\0', 4096);
+    int ret = (int) read(socket, &msg, 4095);
+
+    std::string supr = std::string(msg,ret);
+    long x = supr.find("\n");
+    if(x!=-1) supr.replace(x, 1,"\0");
     if (ret < 0) {
-        consoleOut("Chyba při příjmání zprávy od uživatele " + socket);
-        return "ERR";
+        supr+="ERR#";
     } else if (ret == 0) {
-        return "EOS";
-    } else {
-        int i = 0;
-        std::string msgRet = "";
-        while (msg[i] != '#' && i < 127 && msg[i] != '\0' && msg[i] != '\n') {
-            msgRet += msg[i];
-            i++;
-        }
-        return msgRet;
+        supr+="EOS#";
     }
+    consoleOut("Přijata zpráva od "+std::to_string(socket)+": "+supr);
+    return messenger::splitMsg(supr, '#');
+
+//    } else {
+//        int i = 0;
+//        std::string msgRet = "";
+//        while (msg[i] != '#' && i < 4095 && msg[i] != '\0' && msg[i] != '\n') {
+//            msgRet += msg[i];
+//            i++;
+//        }
+//        consoleOut("Vracim "+std::to_string(socket)+": "+msgRet);
+//
+//        return msgRet;
+//    }
 }
 
 bool server::loginUsr(int socket, std::string name) {
@@ -404,11 +416,18 @@ bool server::checkPlayer(int sd) {
 }
 
 void server::pingBack(int id) {
+    struct timespec thisPing;
+
     for (int i = 0; i < gameRooms.size(); ++i) {
         for (int j = 0; j < gameRooms.at(i)->users.size(); ++j) {
             if(gameRooms.at(i)->users.at(j).uId == id && gameRooms.at(i)->users.at(j).isOnline){
-                clock_gettime(CLOCK_MONOTONIC, &gameRooms.at(i)->users.at(j).lastPing);
-                messenger::sendMsg(id, "PONG#\n");
+                clock_gettime(CLOCK_MONOTONIC, &thisPing);
+                double elapsed = (thisPing.tv_sec - gameRooms.at(i)->users.at(j).lastPing.tv_sec);
+                elapsed += (thisPing.tv_nsec - gameRooms.at(i)->users.at(j).lastPing.tv_nsec) / 1000000000.0;
+                if(elapsed>0.5 && gameRooms.at(i)->users.at(j).isOnline) {
+                    clock_gettime(CLOCK_MONOTONIC, &gameRooms.at(i)->users.at(j).lastPing);
+                    messenger::sendMsg(id, "PONG#\n");
+                }
                 return;
             }
         }
@@ -427,7 +446,7 @@ void server::startPinging(server* srv) {
                 clock_gettime(CLOCK_MONOTONIC, &thisPing);
                 double elapsed = (thisPing.tv_sec - srv->gameRooms.at(i)->users.at(j).lastPing.tv_sec);
                 elapsed += (thisPing.tv_nsec - srv->gameRooms.at(i)->users.at(j).lastPing.tv_nsec) / 1000000000.0;
-                if(elapsed>100 && srv->gameRooms.at(i)->users.at(j).isOnline){
+                if(elapsed>15 && srv->gameRooms.at(i)->users.at(j).isOnline){
                     srv->logoutUsr(srv->gameRooms.at(i)->users.at(j).uId);
                 }
             }
