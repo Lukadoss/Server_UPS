@@ -148,12 +148,12 @@ void gameRoom::loop(gameRoom *r) {
     r->giveCardsToPlayers();
     messenger::sendMsgAll(r->users, "S_CONSOLE_INFO:---GAME_STARTED---#\n");
     previousStackNum = r->info.cards.size();
-
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
     messenger::sendMsgAll(r->users, "S_ON_TURN:" + r->users.at(r->info.onTurnId).name + ":" +
                                     r->users.at(r->info.lastTurnId).name + ":" +
                                     std::to_string(r->users.at(r->info.lastTurnId).cards.size()) + "#\n");
     while (!r->info.isOver) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
         if (previousStackNum < r->info.cards.size()) {
             r->nextPlayer();
             messenger::sendMsgAll(r->users, "S_ON_TURN:" + r->users.at(r->info.onTurnId).name + ":" +
@@ -241,6 +241,7 @@ void gameRoom::placeCard(int id, std::string card) {
                         return;
                     }
                     info.lastTurnId = i;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(50));
                     messenger::sendMsg(users.at(info.onTurnId).uId, "S_CARD_ACK:" + info.cards.back() + "#\n");
                     return;
                 }

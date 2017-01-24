@@ -144,7 +144,7 @@ void server::start() {
                     switch (msgtable::getType(splittedMsg[0])) {
                         case msgtable::C_LOGIN:
                             if (checkPlayer(sd)) break;
-                            if (splittedMsg[1].length() >= 3 && splittedMsg[1].length() <= 15) {
+                            if (splittedMsg.size() > 1 && splittedMsg[1].length() >= 3 && splittedMsg[1].length() <= 15) {
                                 if (!loginUsr(sd, splittedMsg[1])) {
                                     clientSockets[i] = 0;
                                 }
@@ -427,7 +427,7 @@ void server::startPinging(server* srv) {
                 clock_gettime(CLOCK_MONOTONIC, &thisPing);
                 double elapsed = (thisPing.tv_sec - srv->gameRooms.at(i)->users.at(j).lastPing.tv_sec);
                 elapsed += (thisPing.tv_nsec - srv->gameRooms.at(i)->users.at(j).lastPing.tv_nsec) / 1000000000.0;
-                if(elapsed>5 && srv->gameRooms.at(i)->users.at(j).isOnline){
+                if(elapsed>100 && srv->gameRooms.at(i)->users.at(j).isOnline){
                     srv->logoutUsr(srv->gameRooms.at(i)->users.at(j).uId);
                 }
             }
