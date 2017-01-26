@@ -379,7 +379,9 @@ void gameRoom::sendReconnectInfo(int socket, int pos) {
         if(info.cards.size()>0){
             firstStackCard = info.cards.at(0).c_str();
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
         messenger::sendMsg(socket, "S_STACK_CARDS:" + std::to_string(info.cards.size()) +":"+firstStackCard+"#\n");
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
         messenger::sendMsg(socket, "S_ON_TURN:" + users.at(info.onTurnId).name + ":" +
                                    users.at(info.lastTurnId).name + ":" +
                                    std::to_string(users.at(info.lastTurnId).cards.size()) + "#\n");

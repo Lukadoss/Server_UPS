@@ -382,6 +382,7 @@ bool server::userIsDced(std::string name) {
 }
 
 void server::sendRoomInfo(int socket) {
+    int playerPos = 0;
     players::User player = getUserById(socket);
     if (player.uId != -1 && player.isOnline) {
         if (gameRooms.at(player.roomId)->users.size() > 1) {
@@ -393,10 +394,11 @@ void server::sendRoomInfo(int socket) {
                             gameRooms.at(player.roomId)->users.at(j).cards.size()) + "#\n");
                     std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 } else {
-                    gameRooms.at(player.roomId)->sendReconnectInfo(socket, j);
-                    gameRooms.at(player.roomId)->users.at(j).socketPos = curPos;
+                    playerPos = j;
                 }
             }
+            gameRooms.at(player.roomId)->sendReconnectInfo(socket, playerPos);
+            gameRooms.at(player.roomId)->users.at(playerPos).socketPos = curPos;
         } else {
             messenger::sendMsg(sd, "S_CONSOLE_INFO:Jsi zde sám#\n");
         }
@@ -446,7 +448,7 @@ void server::startPinging(server* srv) {
                 clock_gettime(CLOCK_MONOTONIC, &thisPing);
                 double elapsed = (thisPing.tv_sec - srv->gameRooms.at(i)->users.at(j).lastPing.tv_sec);
                 elapsed += (thisPing.tv_nsec - srv->gameRooms.at(i)->users.at(j).lastPing.tv_nsec) / 1000000000.0;
-                if(elapsed>15 && srv->gameRooms.at(i)->users.at(j).isOnline){
+                if(elapsed>20 && srv->gameRooms.at(i)->users.at(j).isOnline){
                     srv->logoutUsr(srv->gameRooms.at(i)->users.at(j).uId);
                 }
             }
